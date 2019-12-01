@@ -8,12 +8,8 @@
   },
   "author": "mcc",
   "license": "MIT",
-  "__comment": "Below, specific versions of React are requested so Typescript target:es5 will work.",
   "dependencies": {
-    "@types/react": "16.8.6",
-    "@types/react-dom": "16.8.2",
-    "react": "16.8.3",
-    "react-dom": "16.8.3",
+    "preact": "^10.0.5",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.2.3"
   },

@@ -1,9 +1,11 @@
-import * as React from "react";
-import * as ReactDOM from "react-dom";
+import { h, render, Component } from "preact";
 
 declare let require:any
 
-class Content extends React.Component<any, any> {
+let parentNode = document.getElementById("content")
+let replaceNode = document.getElementById("initial-loading")
+
+class Content extends Component<any, any> {
   constructor(props:{}) {
     super(props);
     this.state = {};
@@ -16,7 +18,7 @@ class Content extends React.Component<any, any> {
   }
 }
 
-ReactDOM.render(
+render(
   <Content />,
-  document.getElementById("content")
+  parentNode, replaceNode
 );
