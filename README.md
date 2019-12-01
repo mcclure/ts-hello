@@ -4,4 +4,4 @@ Created by Andi McClure.
 
 [Usage instructions](run.txt)
 
-[License](license.txt)
+[License](LICENSE.txt)
