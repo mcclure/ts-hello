@@ -1,1 +1,5 @@
+The following applies to the "ts-hello" example, and not this current commit. This is an in-progress repo and you are granted no particular rights.
+
+--
+
 The contents of this directory are released by their author into the public domain. If public domain is not an option, it is made available to you under the terms of the Creative Commons Zero license: https://creativecommons.org/publicdomain/zero/1.0/legalcode

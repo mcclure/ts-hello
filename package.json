@@ -1,13 +1,13 @@
 {
-  "name": "hello",
+  "name": "libp2p-hello",
   "version": "1.0.0",
-  "description": "Typescript starting project",
+  "description": "libp2p experiment",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "mcc",
-  "license": "MIT",
+  "license": "TBD",
   "dependencies": {
     "preact": "^10.0.5",
     "webpack": "^4.29.6",
