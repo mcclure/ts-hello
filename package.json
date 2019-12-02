@@ -2,12 +2,11 @@
   "name": "hello",
   "version": "1.0.0",
   "description": "Typescript starting project",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "mcc",
-  "license": "MIT",
+  "license": "CC0-1.0",
   "dependencies": {
     "preact": "^10.0.5",
     "webpack": "^4.29.6",
