@@ -1,31 +1,46 @@
-import { h, render, Component } from "preact";
+import { h, render, createContext } from "preact";
+import { useContext } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
 import { createNode } from "./p2p/create-node"
+//import { OrderedSet } from "immutable"
 
 declare let require:any
 
 let parentNode = document.getElementById("content")
 let replaceNode = document.getElementById("initial-loading")
+let verbose = false
 
-class Content extends Component<any, any> {
-  constructor(props:{}) {
-    super(props);
-    this.state = {};
-  }
+let selfIdValue = ''
+let SelfId = createContext(selfIdValue)
 
-  render() {
-    return (
-      <div>Hello</div>
-    )
-  }
+//let selfId : string, setSelfId : StateUpdater<string>;
+//const [preconnectList, setPreconnectList] = useState(OrderedSet<string>());
+//const [connectList, setConnectList] = useState(OrderedSet<string>());
+
+function Content() {
+  const selfId = useContext(SelfId)
+  return <div>
+    Hello?<br />
+    I am {selfId ? selfId : "[pending]"}
+  </div>
 }
 
+let refreshed = false
 function refresh() {
+  refreshed = true
   render(
-    <Content />,
+    <SelfId.Provider value={selfIdValue}>
+      <Content />
+    </SelfId.Provider>,
     parentNode, replaceNode
   );
   replaceNode = undefined
+}
+function requestRefresh() {
+  if (refreshed) {
+    refreshed = false
+    requestAnimationFrame(refresh)
+  }
 }
 refresh()
 
@@ -35,15 +50,15 @@ createNode((err:any, node:Node) => {
   }
 
   node.on('peer:discovery', (peerInfo:any) => {
-    console.log("Discovered peer", peerInfo.id.toB58String())
+    if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
   })
 
   node.on('peer:connect', (peerInfo:any) => {
-    console.log("Connected peer", peerInfo.id.toB58String())
+    if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
   })
 
   node.on('peer:disconnect', (peerInfo:any) => {
-    console.log("Disconnected peer", peerInfo.id.toB58String())
+    if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
   })
 
   node.start((err:any) => {
@@ -52,11 +67,12 @@ createNode((err:any, node:Node) => {
       return
     }
 
-    console.log("Started, self is", node.peerInfo.id.toB58String())
+    if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
+    selfIdValue = node.peerInfo.id.toB58String(); requestRefresh()
 
     let nodeI = 0
     node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
-      console.log("Peer", nodeI++, ":", ma.toString())
+      if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
     })
   })
 })
