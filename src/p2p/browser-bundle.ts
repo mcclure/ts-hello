@@ -1,4 +1,4 @@
-// File from browser-bundle.js, libp2p-js "libp2p-in-the-browser/1" example
+// File from browser-bundle.js, libp2p-js "libp2p-in-the-browser/1" example, git:35ac02dcb5e6
 // libp2p-js license (MIT) applies
 
 declare let require:any
