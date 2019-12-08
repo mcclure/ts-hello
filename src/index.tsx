@@ -1,4 +1,4 @@
-import { h, render, createContext } from "preact";
+import { h, render, Context, createContext } from "preact";
 import { useContext } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
 import { createNode } from "./p2p/create-node"
@@ -6,43 +6,64 @@ import { createNode } from "./p2p/create-node"
 
 declare let require:any
 
-let parentNode = document.getElementById("content")
-let replaceNode = document.getElementById("initial-loading")
 let verbose = false
 
-let selfIdValue = ''
-let SelfId = createContext(selfIdValue)
+// ---- Helpers ----
+
+class Refresher {
+  private refreshed = true
+  public refresh:()=>void
+  constructor(refreshCallback :()=>void, dontRenderYet?:boolean) {
+    this.refresh = () => {
+      this.refreshed = true
+      refreshCallback()
+    }
+    if (!dontRenderYet)
+      this.refresh()
+  }
+  request() {
+     if (this.refreshed) {
+      this.refreshed = false
+      requestAnimationFrame(this.refresh)
+    }
+  }
+}
+
+class State<T> {
+  public context: Context<T>
+  constructor(public value:T) {
+    this.context = createContext(value)
+  }
+}
+
+// ----- Display -----
+
+let parentNode = document.getElementById("content")
+let replaceNode = document.getElementById("initial-loading")
+
+let SelfId = new State("")
 
 //let selfId : string, setSelfId : StateUpdater<string>;
 //const [preconnectList, setPreconnectList] = useState(OrderedSet<string>());
 //const [connectList, setConnectList] = useState(OrderedSet<string>());
 
 function Content() {
-  const selfId = useContext(SelfId)
+  const selfId = useContext(SelfId.context)
   return <div>
     Hello?<br />
     I am {selfId ? selfId : "[pending]"}
   </div>
 }
 
-let refreshed = false
-function refresh() {
-  refreshed = true
+let refresh = new Refresher(() => {
   render(
-    <SelfId.Provider value={selfIdValue}>
+    <SelfId.context.Provider value={SelfId.value}>
       <Content />
-    </SelfId.Provider>,
+    </SelfId.context.Provider>,
     parentNode, replaceNode
   );
   replaceNode = undefined
-}
-function requestRefresh() {
-  if (refreshed) {
-    refreshed = false
-    requestAnimationFrame(refresh)
-  }
-}
-refresh()
+})
 
 createNode((err:any, node:Node) => {
   if (err) {
@@ -68,7 +89,7 @@ createNode((err:any, node:Node) => {
     }
 
     if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
-    selfIdValue = node.peerInfo.id.toB58String(); requestRefresh()
+    SelfId.value = node.peerInfo.id.toB58String(); refresh.request()
 
     let nodeI = 0
     node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
