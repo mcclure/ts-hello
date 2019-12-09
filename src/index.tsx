@@ -62,12 +62,12 @@ function UserBox() {
   return <div>You are {selfId ? selfId : "[pending]"}</div>
 }
 
-function UsersBox(props: {list: State<OrderedSet<string>>>, label:string}) {
+function UsersBox(props: {list: State<OrderedSet<string>>, label:string}) {
   const userList = useContext(props.list.context)
   const userFragment = userList.map(
-    s => <div>s</div>
-  ).toJs()
-  return <div><div>{label}</div>{userFragment}</div>
+    s => <div>{s}</div>
+  ).toJS()
+  return <div><div>{props.label}</div>{userFragment}</div>
 }
 
 function Content() {
@@ -93,14 +93,18 @@ createNode((err:any, node:Node) => {
 
   node.on('peer:discovery', (peerInfo:any) => {
     if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
+    PreconnectList.value = PreconnectList.value.add(peerInfo.id.toB58String()); refresh.request()
   })
 
   node.on('peer:connect', (peerInfo:any) => {
     if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
+    PreconnectList.value = PreconnectList.value.delete(peerInfo.id.toB58String());
+    ConnectList.value = ConnectList.value.add(peerInfo.id.toB58String()); refresh.request()
   })
 
   node.on('peer:disconnect', (peerInfo:any) => {
     if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
+    ConnectList.value = ConnectList.value.delete(peerInfo.id.toB58String()); refresh.request()
   })
 
   node.start((err:any) => {
