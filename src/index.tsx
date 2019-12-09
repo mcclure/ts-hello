@@ -1,8 +1,8 @@
-import { h, render, Context, createContext } from "preact";
+import { h, render, Context, createContext, JSX } from "preact";
 import { useContext } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
 import { createNode } from "./p2p/create-node"
-//import { OrderedSet } from "immutable"
+import { OrderedSet } from "immutable"
 
 declare let require:any
 
@@ -36,30 +36,51 @@ class State<T> {
   }
 }
 
+class StateGroup {
+  constructor(public states:State<any>[]) {}
+  render(inside:JSX.Element) {
+    for (let X of this.states) {
+      inside = <X.context.Provider value={X.value}>{inside}</X.context.Provider>
+    }
+    return inside
+  }
+}
+
 // ----- Display -----
 
 let parentNode = document.getElementById("content")
 let replaceNode = document.getElementById("initial-loading")
 
 let SelfId = new State("")
+let PreconnectList = new State(OrderedSet<string>())
+let ConnectList = new State(OrderedSet<string>())
 
-//let selfId : string, setSelfId : StateUpdater<string>;
-//const [preconnectList, setPreconnectList] = useState(OrderedSet<string>());
-//const [connectList, setConnectList] = useState(OrderedSet<string>());
+let states = new StateGroup([SelfId, PreconnectList, ConnectList])
+
+function UserBox() {
+  const selfId = useContext(SelfId.context)
+  return <div>You are {selfId ? selfId : "[pending]"}</div>
+}
+
+function UsersBox(props: {list: State<OrderedSet<string>>>, label:string}) {
+  const userList = useContext(props.list.context)
+  const userFragment = userList.map(
+    s => <div>s</div>
+  ).toJs()
+  return <div><div>{label}</div>{userFragment}</div>
+}
 
 function Content() {
-  const selfId = useContext(SelfId.context)
   return <div>
     Hello?<br />
-    I am {selfId ? selfId : "[pending]"}
+    <UserBox />
+    <UsersBox label="Discovered peers" list={PreconnectList} />
+    <UsersBox label="Connected peers" list={ConnectList} />
   </div>
 }
 
 let refresh = new Refresher(() => {
-  render(
-    <SelfId.context.Provider value={SelfId.value}>
-      <Content />
-    </SelfId.context.Provider>,
+  render( states.render(<Content />),
     parentNode, replaceNode
   );
   replaceNode = undefined

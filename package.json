@@ -10,6 +10,7 @@
   "license": "TBD",
   "__comment": "libp2p api is pretty volatile so all versions have been requested as ~",
   "dependencies": {
+    "immutable": "^4.0.0-rc.12",
     "libp2p": "~0.26.2",
     "libp2p-bootstrap": "~0.9.7",
     "libp2p-gossipsub": "~0.0.4",
