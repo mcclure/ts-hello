@@ -8,14 +8,14 @@
   "author": "mcc",
   "license": "CC0-1.0",
   "dependencies": {
-    "preact": "^10.0.5",
+    "preact": "^10.1.0",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.2.3"
   },
   "devDependencies": {
     "awesome-typescript-loader": "^5.2.1",
-    "copy-webpack-plugin": "^5.0.0",
+    "copy-webpack-plugin": "^5.1.0",
     "source-map-loader": "^0.2.4",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.7.3"
   }
 }
