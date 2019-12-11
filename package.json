@@ -13,7 +13,7 @@
     "webpack-cli": "^3.2.3"
   },
   "devDependencies": {
-    "awesome-typescript-loader": "^5.2.1",
+    "ts-loader": "^6.2.1",
     "copy-webpack-plugin": "^5.1.0",
     "source-map-loader": "^0.2.4",
     "typescript": "^3.7.3"
