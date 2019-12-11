@@ -57,25 +57,35 @@ let ConnectList = new State(OrderedSet<string>())
 
 let states = new StateGroup([SelfId, PreconnectList, ConnectList])
 
-function UserBox() {
-  const selfId = useContext(SelfId.context)
-  return <div>You are {selfId ? selfId : "[pending]"}</div>
+function NoUserBox() {
+  return <div className="UserBox"><span className="Header">Connecting to libp2p…</span></div>
 }
 
-function UsersBox(props: {list: State<OrderedSet<string>>, label:string}) {
+function UserBox(props: {selfId:string}) {
+  return <div className="UserBox"><span className="Header">Connected to libp2p</span> as <span className="Id">{props.selfId}</span></div>
+}
+
+function UsersBox(props: {list: State<OrderedSet<string>>, label:string, className:string}) {
   const userList = useContext(props.list.context)
   const userFragment = userList.map(
-    s => <div>{s}</div>
+    s => <div className="Id">{s}</div>
   ).toJS()
-  return <div><div>{props.label}</div>{userFragment}</div>
+  return <div className={"ListBox " + props.className}>
+    <div className="Header">{props.label}</div>
+    <div className="List">{userFragment}</div>
+  </div>
 }
 
 function Content() {
+  const selfId = useContext(SelfId.context)
+
+  if (!selfId)
+    return <NoUserBox />
+
   return <div>
-    Hello?<br />
-    <UserBox />
-    <UsersBox label="Discovered peers" list={PreconnectList} />
-    <UsersBox label="Connected peers" list={ConnectList} />
+    <UserBox selfId={selfId} />
+    <UsersBox label="Connected peers" list={ConnectList} className="ConnectBox" />
+    <UsersBox label="Discovered peers" list={PreconnectList} className="PreconnectBox" />
   </div>
 }
 

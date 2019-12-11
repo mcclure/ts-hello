@@ -1,1 +1,9 @@
 body { font-family:sans-serif; }
+.Header { font-weight:bold; }
+.ListBox { margin-top:1em; }
+.ListBox .List { display:inline-block; }
+.Id { font-family:monospace; padding:0.2em;}
+.ListBox .Id { margin-top:0.2em; }
+.UserBox .Id { background-color:gainsboro; }
+.ConnectBox .Id { background-color:#DEFDE0 }
+.PreconnectBox .Id { background-color:#FCF7DE }
