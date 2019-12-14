@@ -2,7 +2,7 @@ import { h, render, Context, createContext, JSX } from "preact";
 import { useContext } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
 import { createNode } from "./p2p/create-node"
-import { OrderedSet } from "immutable"
+import { OrderedSet, List, Record } from "immutable"
 
 declare let require:any
 
@@ -51,11 +51,15 @@ class StateGroup {
 let parentNode = document.getElementById("content")
 let replaceNode = document.getElementById("initial-loading")
 
+type ErrorRecordParams = {tag:string, error:string}
+const ErrorRecord = Record<ErrorRecordParams>({ tag: null, error: null })
+
 let SelfId = new State("")
 let PreconnectList = new State(OrderedSet<string>())
 let ConnectList = new State(OrderedSet<string>())
+let ErrorList = new State(List<Record<ErrorRecordParams>>())
 
-let states = new StateGroup([SelfId, PreconnectList, ConnectList])
+let states = new StateGroup([SelfId, PreconnectList, ConnectList, ErrorList])
 
 function NoUserBox() {
   return <div className="UserBox"><span className="Header">Connecting to libp2p…</span></div>
@@ -76,17 +80,41 @@ function UsersBox(props: {list: State<OrderedSet<string>>, label:string, classNa
   </div>
 }
 
+function ErrorBox() {
+  const errorList = useContext(ErrorList.context)
+  if (errorList.isEmpty())
+    return null
+  const errorFragment = errorList.map(
+    e => <div className="Error"><span className="Explanation">{e.get("tag") || "Error"}:</span> <span className="content">{e.get("error") || "[Unknown error]"}</span></div>
+  ).toJS()
+  return <div className="ListBox ErrorBox">
+    <div className="Header">Errors</div>
+    <div className="List">{errorFragment}</div>
+  </div>
+}
+
 function Content() {
   const selfId = useContext(SelfId.context)
 
   if (!selfId)
-    return <NoUserBox />
+    return <div>
+      <NoUserBox />
+      <ErrorBox />
+    </div>
 
   return <div>
     <UserBox selfId={selfId} />
+    <ErrorBox />
     <UsersBox label="Connected peers" list={ConnectList} className="ConnectBox" />
     <UsersBox label="Discovered peers" list={PreconnectList} className="PreconnectBox" />
   </div>
+}
+
+function logError(tag:string, err:Error, isFatal:boolean) {
+  if (verbose || isFatal)
+    console.log(tag, err);
+
+  ErrorList.value = ErrorList.value.push(ErrorRecord({tag: tag, error: err.message})); refresh.request()
 }
 
 let refresh = new Refresher(() => {
@@ -96,9 +124,9 @@ let refresh = new Refresher(() => {
   replaceNode = undefined
 })
 
-createNode((err:any, node:Node) => {
+createNode((err:Error, node:Node) => {
   if (err) {
-    console.log("Failure", err)
+    logError("Startup failure", err, true)
   }
 
   node.on('peer:discovery', (peerInfo:any) => {
@@ -117,9 +145,9 @@ createNode((err:any, node:Node) => {
     ConnectList.value = ConnectList.value.delete(peerInfo.id.toB58String()); refresh.request()
   })
 
-  node.start((err:any) => {
+  node.start((err:Error) => {
     if (err) {
-      console.log("Start failure", err)
+      logError("Connection failure", err, true)
       return
     }
 

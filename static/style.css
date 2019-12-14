@@ -1,9 +1,11 @@
 body { font-family:sans-serif; }
-.Header { font-weight:bold; }
+.Header, .Explanation { font-weight:bold; }
 .ListBox { margin-top:1em; }
 .ListBox .List { display:inline-block; }
-.Id { font-family:monospace; padding:0.2em;}
+.Id, .ErrorBox .Error { padding:0.2em; }
+.Id { font-family:monospace; }
 .ListBox .Id { margin-top:0.2em; }
 .UserBox .Id { background-color:gainsboro; }
 .ConnectBox .Id { background-color:#DEFDE0 }
 .PreconnectBox .Id { background-color:#FCF7DE }
+.ErrorBox .Error { font-size: 0.8em; background-color:#FDDFDF; }
