@@ -54,15 +54,16 @@ let replaceNode = document.getElementById("initial-loading")
 type ErrorRecordParams = {tag:string, error:string}
 const ErrorRecord = Record<ErrorRecordParams>({ tag: null, error: null })
 
+let ConnectionFailed = new State(false)
 let SelfId = new State("")
 let PreconnectList = new State(OrderedSet<string>())
 let ConnectList = new State(OrderedSet<string>())
 let ErrorList = new State(List<Record<ErrorRecordParams>>())
 
-let states = new StateGroup([SelfId, PreconnectList, ConnectList, ErrorList])
+let states = new StateGroup([ConnectionFailed, SelfId, PreconnectList, ConnectList, ErrorList])
 
-function NoUserBox() {
-  return <div className="UserBox"><span className="Header">Connecting to libp2p…</span></div>
+function NoUserBox(props: {failed:boolean}) {
+  return <div className="UserBox"><span className="Header">{props.failed ? "Connection failed" : "Connecting to libp2p…"}</span></div>
 }
 
 function UserBox(props: {selfId:string}) {
@@ -94,11 +95,12 @@ function ErrorBox() {
 }
 
 function Content() {
+  const connectionFailed = useContext(ConnectionFailed.context)
   const selfId = useContext(SelfId.context)
 
   if (!selfId)
     return <div>
-      <NoUserBox />
+      <NoUserBox failed={connectionFailed} />
       <ErrorBox />
     </div>
 
@@ -114,7 +116,9 @@ function logError(tag:string, err:Error, isFatal:boolean) {
   if (verbose || isFatal)
     console.log(tag, err);
 
-  ErrorList.value = ErrorList.value.push(ErrorRecord({tag: tag, error: err.message})); refresh.request()
+  ErrorList.value = ErrorList.value.push(ErrorRecord({tag: tag, error: err.message}))
+  if (isFatal) ConnectionFailed.value = true
+  refresh.request()
 }
 
 let refresh = new Refresher(() => {
