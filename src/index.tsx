@@ -10,9 +10,13 @@ let verbose = false
 
 // ---- Helpers ----
 
+// Object triggers a callback on the next animation frame.
+// When the animation frame comes the callback will be called only once.
 class Refresher {
   private refreshed = true
   public refresh:()=>void
+
+  // Construct with callback to be called
   constructor(refreshCallback :()=>void, dontRenderYet?:boolean) {
     this.refresh = () => {
       this.refreshed = true
@@ -21,6 +25,8 @@ class Refresher {
     if (!dontRenderYet)
       this.refresh()
   }
+
+  // Call to trigger callback on next frame
   request() {
      if (this.refreshed) {
       this.refreshed = false
@@ -29,6 +35,8 @@ class Refresher {
   }
 }
 
+// Object pairs a piece of global state with a Preact context
+// To use, change the "value" field and then request Preact rerender
 class State<T> {
   public context: Context<T>
   constructor(public value:T) {
@@ -36,8 +44,12 @@ class State<T> {
   }
 }
 
+// Object keeps a list of States and wraps a JSX element with providers for all of them in order.
 class StateGroup {
+  // Construct with list of States
   constructor(public states:State<any>[]) {}
+
+  // Call to turn JSX element into context-wrapped JSX element
   render(inside:JSX.Element) {
     for (let X of this.states) {
       inside = <X.context.Provider value={X.value}>{inside}</X.context.Provider>
@@ -48,12 +60,15 @@ class StateGroup {
 
 // ----- Display -----
 
+// DOM elements
 let parentNode = document.getElementById("content")
 let replaceNode = document.getElementById("initial-loading")
 
+// Immutable Record for an error (to format like "tag: error")
 type ErrorRecordParams = {tag:string, error:string}
 const ErrorRecord = Record<ErrorRecordParams>({ tag: null, error: null })
 
+// Global state
 let ConnectionFailed = new State(false)
 let SelfId = new State("")
 let PreconnectList = new State(OrderedSet<string>())
@@ -62,14 +77,19 @@ let ErrorList = new State(List<Record<ErrorRecordParams>>())
 
 let states = new StateGroup([ConnectionFailed, SelfId, PreconnectList, ConnectList, ErrorList])
 
+// Preact rendering
+
+// Display in lieu of user info when not connected
 function NoUserBox(props: {failed:boolean}) {
   return <div className="UserBox"><span className="Header">{props.failed ? "Connection failed" : "Connecting to libp2p…"}</span></div>
 }
 
+// Display information about "our" peer
 function UserBox(props: {selfId:string}) {
   return <div className="UserBox"><span className="Header">Connected to libp2p</span> as <span className="Id">{props.selfId}</span></div>
 }
 
+// Display information about connected peers
 function UsersBox(props: {list: State<OrderedSet<string>>, label:string, className:string}) {
   const userList = useContext(props.list.context)
   const userFragment = userList.map(
@@ -81,6 +101,7 @@ function UsersBox(props: {list: State<OrderedSet<string>>, label:string, classNa
   </div>
 }
 
+// Display list of errors (or nothing if empty)
 function ErrorBox() {
   const errorList = useContext(ErrorList.context)
   if (errorList.isEmpty())
@@ -94,6 +115,7 @@ function ErrorBox() {
   </div>
 }
 
+// Display entire UI (JSX root element)
 function Content() {
   const connectionFailed = useContext(ConnectionFailed.context)
   const selfId = useContext(SelfId.context)
@@ -112,6 +134,7 @@ function Content() {
   </div>
 }
 
+// Call to append to error list
 function logError(tag:string, err:Error, isFatal:boolean) {
   if (verbose || isFatal)
     console.log(tag, err);
@@ -121,12 +144,15 @@ function logError(tag:string, err:Error, isFatal:boolean) {
   refresh.request()
 }
 
+// Display
 let refresh = new Refresher(() => {
   render( states.render(<Content />),
     parentNode, replaceNode
   );
   replaceNode = undefined
 })
+
+// ---- Networking ----
 
 createNode((err:Error, node:Node) => {
   if (err) {
@@ -160,6 +186,7 @@ createNode((err:Error, node:Node) => {
 
     let nodeI = 0
     node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
+      // FIXME: Should these be added to the Connected or Discovery lists? 
       if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
     })
   })
