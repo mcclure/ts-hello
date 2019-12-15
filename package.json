@@ -1,12 +1,12 @@
 {
   "name": "libp2p-hello",
   "version": "1.0.0",
-  "description": "Typescript starting project",
+  "description": "TypeScript+Libp2p+Preact starting project",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "mcc",
-  "license": "TBD",
+  "author": "various",
+  "license": "MIT",
   "__comment": "libp2p api is pretty volatile so all versions have been requested as ~",
   "dependencies": {
     "immutable": "^4.0.0-rc.12",
