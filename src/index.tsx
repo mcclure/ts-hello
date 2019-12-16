@@ -44,7 +44,7 @@ function StateContext<T> (props:{state:State<T>, children:ComponentChildren}) {
     return () => {
       state.removeListener(setValue)
     }
-  })
+  }, []) // Empty dependencies list so listener only registers once
   return <state.context.Provider value={value}>{props.children}</state.context.Provider>
 }
 
