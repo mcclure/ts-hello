@@ -1,5 +1,5 @@
-import { h, render, Context, createContext, JSX } from "preact";
-import { useContext } from "preact/hooks";
+import { h, render, Context, createContext, JSX, ComponentChildren } from "preact";
+import { useContext, useState, useEffect } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
 import { createNode } from "./p2p/create-node"
 import { OrderedSet, List, Record } from "immutable"
@@ -10,52 +10,50 @@ let verbose = false
 
 // ---- Helpers ----
 
-// Object triggers a callback on the next animation frame.
-// When the animation frame comes the callback will be called only once.
-class Refresher {
-  private refreshed = true
-  public refresh:()=>void
-
-  // Construct with callback to be called
-  constructor(refreshCallback :()=>void, dontRenderYet?:boolean) {
-    this.refresh = () => {
-      this.refreshed = true
-      refreshCallback()
-    }
-    if (!dontRenderYet)
-      this.refresh()
-  }
-
-  // Call to trigger callback on next frame
-  request() {
-     if (this.refreshed) {
-      this.refreshed = false
-      requestAnimationFrame(this.refresh)
-    }
-  }
-}
-
-// Object pairs a piece of global state with a Preact context
-// To use, change the "value" field and then request Preact rerender
+// A piece of state with a notification system for Preact listeners
 class State<T> {
   public context: Context<T>
-  constructor(public value:T) {
-    this.context = createContext(value)
+  private listeners:Set<(_:T)=>void>
+
+  // Construct with an initial value. "Inherit" to use an existing context key
+  constructor(public value:T, inherit?: Context<T>) {
+    this.listeners = new Set<(_:T)=>void>()
+    this.context = inherit || createContext(value)
   }
+
+  // Call to update value
+  set(value:T) {
+    this.value = value
+    for (let fn of this.listeners) {
+      fn(this.value)
+    }
+  }
+
+  addListener(listener:(_:T)=>void) { this.listeners.add(listener) }
+  removeListener(listener:(_:T)=>void) { this.listeners.delete(listener) }
+
+  clone() { return new State(this.value, this.context) }
 }
 
-// Object keeps a list of States and wraps a JSX element with providers for all of them in order.
-class StateGroup {
-  // Construct with list of States
-  constructor(public states:State<any>[]) {}
-
-  // Call to turn JSX element into context-wrapped JSX element
-  render(inside:JSX.Element) {
-    for (let X of this.states) {
-      inside = <X.context.Provider value={X.value}>{inside}</X.context.Provider>
+// Preact component which is an auto-updating Provider for a State
+function StateContext<T> (props:{state:State<T>, children:ComponentChildren}) {
+  let state = props.state
+  let [value, setValue] = useState(state.value)
+  let effect = useEffect(() => {
+    state.addListener(setValue)
+    return () => {
+      state.removeListener(setValue)
     }
-    return inside
-  }
+  })
+  return <state.context.Provider value={value}>{props.children}</state.context.Provider>
+}
+
+// Function to wrap a React component in several layers of StateContexts at once
+function WrapStateContexts(content:JSX.Element, states:State<any>[]) {
+  for (let s of states) {
+      content = <StateContext state={s}>{content}</StateContext>
+    }
+    return content
 }
 
 // ----- Display -----
@@ -75,7 +73,7 @@ let PreconnectList = new State(OrderedSet<string>())
 let ConnectList = new State(OrderedSet<string>())
 let ErrorList = new State(List<Record<ErrorRecordParams>>())
 
-let states = new StateGroup([ConnectionFailed, SelfId, PreconnectList, ConnectList, ErrorList])
+let states = [ConnectionFailed, SelfId, PreconnectList, ConnectList, ErrorList]
 
 // Preact rendering
 
@@ -139,18 +137,15 @@ function logError(tag:string, err:Error, isFatal:boolean) {
   if (verbose || isFatal)
     console.log(tag, err);
 
-  ErrorList.value = ErrorList.value.push(ErrorRecord({tag: tag, error: err.message}))
-  if (isFatal) ConnectionFailed.value = true
-  refresh.request()
+  ErrorList.set( ErrorList.value.push(ErrorRecord({tag: tag, error: err.message})) )
+  if (isFatal) ConnectionFailed.set( true )
 }
 
 // Display
-let refresh = new Refresher(() => {
-  render( states.render(<Content />),
-    parentNode, replaceNode
-  );
-  replaceNode = undefined
-})
+
+render( WrapStateContexts(<Content />, states),
+  document.getElementById("content"), document.getElementById("initial-loading")
+);
 
 // ---- Networking ----
 
@@ -161,18 +156,18 @@ createNode((err:Error, node:Node) => {
 
   node.on('peer:discovery', (peerInfo:any) => {
     if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
-    PreconnectList.value = PreconnectList.value.add(peerInfo.id.toB58String()); refresh.request()
+    PreconnectList.set( PreconnectList.value.add(peerInfo.id.toB58String()) );
   })
 
   node.on('peer:connect', (peerInfo:any) => {
     if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
-    PreconnectList.value = PreconnectList.value.delete(peerInfo.id.toB58String());
-    ConnectList.value = ConnectList.value.add(peerInfo.id.toB58String()); refresh.request()
+    PreconnectList.set( PreconnectList.value.delete(peerInfo.id.toB58String()) );
+    ConnectList.set( ConnectList.value.add(peerInfo.id.toB58String()) )
   })
 
   node.on('peer:disconnect', (peerInfo:any) => {
     if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
-    ConnectList.value = ConnectList.value.delete(peerInfo.id.toB58String()); refresh.request()
+    ConnectList.set( ConnectList.value.delete(peerInfo.id.toB58String()) )
   })
 
   node.start((err:Error) => {
@@ -182,7 +177,7 @@ createNode((err:Error, node:Node) => {
     }
 
     if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
-    SelfId.value = node.peerInfo.id.toB58String(); refresh.request()
+    SelfId.set( node.peerInfo.id.toB58String() )
 
     let nodeI = 0
     node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
