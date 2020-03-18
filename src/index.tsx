@@ -1,7 +1,6 @@
 import { h, render, Context, createContext, JSX, ComponentChildren } from "preact";
 import { useContext, useState, useEffect } from "preact/hooks";
 import { Node } from "./p2p/browser-bundle"
-import { createNode } from "./p2p/create-node"
 import { OrderedSet, List, Record } from "immutable"
 
 declare let require:any
@@ -148,11 +147,11 @@ render( WrapStateContexts(<Content />, states),
 );
 
 // ---- Networking ----
+(async function() {
+  let node = await Node
 
-createNode((err:Error, node:Node) => {
-  if (err) {
-    logError("Startup failure", err, true)
-  }
+  const webrtcAddr = '/ip4/0.0.0.0/tcp/9090/wss/p2p-webrtc-star'
+  node.peerInfo.multiaddrs.add(webrtcAddr)
 
   node.on('peer:discovery', (peerInfo:any) => {
     if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
@@ -170,19 +169,21 @@ createNode((err:Error, node:Node) => {
     ConnectList.set( ConnectList.value.delete(peerInfo.id.toB58String()) )
   })
 
-  node.start((err:Error) => {
+  try {
+    await node.start();
+  } catch (err) {
     if (err) {
       logError("Connection failure", err, true)
       return
     }
+  }
 
-    if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
-    SelfId.set( node.peerInfo.id.toB58String() )
+  if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
+  SelfId.set( node.peerInfo.id.toB58String() )
 
-    let nodeI = 0
-    node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
-      // FIXME: Should these be added to the Connected or Discovery lists? 
-      if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
-    })
+  let nodeI = 0
+  node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
+    // FIXME: Should these be added to the Connected or Discovery lists? 
+    if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
   })
-})
+})().catch(e => logError("Startup failure", e, true) )
