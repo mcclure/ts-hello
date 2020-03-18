@@ -147,43 +147,52 @@ render( WrapStateContexts(<Content />, states),
 );
 
 // ---- Networking ----
-(async function() {
-  let node = await Node
-
-  const webrtcAddr = '/ip4/0.0.0.0/tcp/9090/wss/p2p-webrtc-star'
-  node.peerInfo.multiaddrs.add(webrtcAddr)
-
-  node.on('peer:discovery', (peerInfo:any) => {
-    if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
-    PreconnectList.set( PreconnectList.value.add(peerInfo.id.toB58String()) );
-  })
-
-  node.on('peer:connect', (peerInfo:any) => {
-    if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
-    PreconnectList.set( PreconnectList.value.delete(peerInfo.id.toB58String()) );
-    ConnectList.set( ConnectList.value.add(peerInfo.id.toB58String()) )
-  })
-
-  node.on('peer:disconnect', (peerInfo:any) => {
-    if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
-    ConnectList.set( ConnectList.value.delete(peerInfo.id.toB58String()) )
-  })
-
+(async function() { // Create and invoke an async function
+  let phase = "Startup"
   try {
+    let node = await Node
+
+    phase = "Configuration"
+
+    // Self
+    const peerIdStr = node.peerInfo.id.toB58String()
+    const webrtcAddr = `/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star/p2p/${peerIdStr}`
+    node.peerInfo.multiaddrs.add(webrtcAddr)
+
+    // Peer discovery
+    const wsAddr = `/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star`
+    node.peerInfo.multiaddrs.add(wsAddr)
+
+    node.on('peer:discovery', (peerInfo:any) => {
+      if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
+      PreconnectList.set( PreconnectList.value.add(peerInfo.id.toB58String()) );
+    })
+
+    node.on('peer:connect', (peerInfo:any) => {
+      if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
+      PreconnectList.set( PreconnectList.value.delete(peerInfo.id.toB58String()) );
+      ConnectList.set( ConnectList.value.add(peerInfo.id.toB58String()) )
+    })
+
+    node.on('peer:disconnect', (peerInfo:any) => {
+      if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
+      ConnectList.set( ConnectList.value.delete(peerInfo.id.toB58String()) )
+    })
+
+    phase = "Connection"
     await node.start();
-  } catch (err) {
-    if (err) {
-      logError("Connection failure", err, true)
-      return
-    }
+
+    phase = "Cleanup"
+
+    if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
+    SelfId.set( node.peerInfo.id.toB58String() )
+
+    let nodeI = 0
+    node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
+      // FIXME: Should these be added to the Connected or Discovery lists? 
+      if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
+    })
+  } catch (e) {
+    logError(`${phase} failure`, e, true)
   }
-
-  if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
-  SelfId.set( node.peerInfo.id.toB58String() )
-
-  let nodeI = 0
-  node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
-    // FIXME: Should these be added to the Connected or Discovery lists? 
-    if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
-  })
-})().catch(e => logError("Startup failure", e, true) )
+})()

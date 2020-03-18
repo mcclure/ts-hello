@@ -1,4 +1,4 @@
-// File from browser-bundle.js, libp2p-js "libp2p-in-the-browser" example, git tag v0.27.3
+// File from index.js, libp2p-js "libp2p-in-the-browser" example, git tag v0.27.3
 // libp2p-js license (MIT) applies
 
 declare let require:any
