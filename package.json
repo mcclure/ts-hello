@@ -8,14 +8,14 @@
   "author": "mcc",
   "license": "CC0-1.0",
   "dependencies": {
-    "preact": "^10.1.0",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.2.3"
+    "preact": "^10.4.8",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   },
   "devDependencies": {
-    "ts-loader": "^6.2.1",
-    "copy-webpack-plugin": "^5.1.0",
-    "source-map-loader": "^0.2.4",
-    "typescript": "^3.7.3"
+    "ts-loader": "^8.0.3",
+    "copy-webpack-plugin": "^6.1.0",
+    "source-map-loader": "^1.1.0",
+    "typescript": "^4.0.2"
   }
 }
