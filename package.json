@@ -10,20 +10,21 @@
   "__comment": "libp2p api is pretty volatile so all versions have been requested as ~",
   "dependencies": {
     "immutable": "^4.0.0-rc.12",
-    "libp2p": "^0.27.3",
-    "libp2p-bootstrap": "^0.10.3",
-    "libp2p-mplex": "^0.9.3",
-    "libp2p-secio": "^0.12.2",
-    "libp2p-webrtc-star": "^0.17.3",
-    "libp2p-websockets": "^0.13.2",
-    "preact": "^10.1.0",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.2.3"
+    "libp2p": "^0.29.0",
+    "libp2p-bootstrap": "^0.12.1",
+    "libp2p-mplex": "^0.10.0",
+    "libp2p-secio": "^0.13.1",
+    "libp2p-noise": "^2.0.1",
+    "libp2p-webrtc-star": "^0.20.1",
+    "libp2p-websockets": "^0.14.0",
+    "preact": "^10.4.8",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   },
   "devDependencies": {
-    "ts-loader": "^6.2.1",
-    "copy-webpack-plugin": "^5.1.0",
-    "source-map-loader": "^0.2.4",
-    "typescript": "^3.7.3"
+    "ts-loader": "^8.0.3",
+    "copy-webpack-plugin": "^6.1.0",
+    "source-map-loader": "^1.1.0",
+    "typescript": "^4.0.2"
   }
 }

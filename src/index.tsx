@@ -89,9 +89,9 @@ function UserBox(props: {selfId:string}) {
 // Display information about connected peers
 function UsersBox(props: {list: State<OrderedSet<string>>, label:string, className:string}) {
   const userList = useContext(props.list.context)
-  const userFragment = userList.map(
+  const userFragment = userList.toArray().map(
     s => <div className="Id">{s}</div>
-  ).toJS()
+  )
   return <div className={"ListBox " + props.className}>
     <div className="Header">{props.label}</div>
     <div className="List">{userFragment}</div>
@@ -103,9 +103,9 @@ function ErrorBox() {
   const errorList = useContext(ErrorList.context)
   if (errorList.isEmpty())
     return null
-  const errorFragment = errorList.map(
+  const errorFragment = errorList.toArray().map(
     e => <div className="Error"><span className="Explanation">{e.get("tag") || "Error"}:</span> <span className="content">{e.get("error") || "[Unknown error]"}</span></div>
-  ).toJS()
+  )
   return <div className="ListBox ErrorBox">
     <div className="Header">Errors</div>
     <div className="List">{errorFragment}</div>
@@ -150,48 +150,46 @@ render( WrapStateContexts(<Content />, states),
 (async function() { // Create and invoke an async function
   let phase = "Startup"
   try {
-    let node = await Node
+    const node = await Node
 
     phase = "Configuration"
-
-    // Self
-    const peerIdStr = node.peerInfo.id.toB58String()
-    const webrtcAddr = `/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star/p2p/${peerIdStr}`
-    node.peerInfo.multiaddrs.add(webrtcAddr)
-
-    // Peer discovery
-    const wsAddr = `/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star`
-    node.peerInfo.multiaddrs.add(wsAddr)
-
-    node.on('peer:discovery', (peerInfo:any) => {
-      if (verbose) console.log("Discovered peer", peerInfo.id.toB58String())
-      PreconnectList.set( PreconnectList.value.add(peerInfo.id.toB58String()) );
+    
+    node.on('peer:discovery', (peerId:any) => {
+      const peerIdStr = peerId.toB58String()
+      if (verbose) console.log("Discovered peer", peerIdStr)
+      PreconnectList.set( PreconnectList.value.add(peerIdStr) );
     })
 
-    node.on('peer:connect', (peerInfo:any) => {
-      if (verbose) console.log("Connected peer", peerInfo.id.toB58String())
-      PreconnectList.set( PreconnectList.value.delete(peerInfo.id.toB58String()) );
-      ConnectList.set( ConnectList.value.add(peerInfo.id.toB58String()) )
+    node.connectionManager.on('peer:connect', (connection:any) => {
+      const peerIdStr = connection.remotePeer.toB58String()
+      if (verbose) console.log("Connected peer", peerIdStr)
+      PreconnectList.set( PreconnectList.value.delete(peerIdStr) );
+      ConnectList.set( ConnectList.value.add(peerIdStr) )
     })
 
-    node.on('peer:disconnect', (peerInfo:any) => {
-      if (verbose) console.log("Disconnected peer", peerInfo.id.toB58String())
-      ConnectList.set( ConnectList.value.delete(peerInfo.id.toB58String()) )
+    node.connectionManager.on('peer:disconnect', (connection:any) => {
+      const peerIdStr = connection.remotePeer.toB58String()
+      if (verbose) console.log("Disconnected peer", peerIdStr)
+      ConnectList.set( ConnectList.value.delete(peerIdStr) )
     })
 
     phase = "Connection"
     await node.start();
 
+    const selfPeerIdStr = node.peerId.toB58String()
+
     phase = "Cleanup"
 
-    if (verbose) console.log("Started, self is", node.peerInfo.id.toB58String())
-    SelfId.set( node.peerInfo.id.toB58String() )
+    if (verbose) console.log("Started, self is", selfPeerIdStr)
+    SelfId.set( selfPeerIdStr )
 
-    let nodeI = 0
-    node.peerInfo.multiaddrs.toArray().forEach((ma:any) => {
-      // FIXME: Should these be added to the Connected or Discovery lists? 
-      if (verbose) console.log("Peer", nodeI++, ":", ma.toString())
-    })
+    if (verbose) {
+      let nodeI = 0
+      node.multiaddrs.forEach((ma:any) => {
+        // FIXME: Should these be added to the Connected or Discovery lists? 
+        console.log("Starting peer", nodeI++, ":", ma.toString())
+      })
+    }
   } catch (e) {
     logError(`${phase} failure`, e, true)
   }
