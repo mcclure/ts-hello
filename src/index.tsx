@@ -89,7 +89,7 @@ function UserBox(props: {selfId:string}) {
 // Display information about connected peers
 function UsersBox(props: {list: State<OrderedSet<string>>, label:string, className:string}) {
   const userList = useContext(props.list.context)
-  const userFragment = userList.toArray().map(
+  const userFragment = Array.from(userList,
     s => <div className="Id">{s}</div>
   )
   return <div className={"ListBox " + props.className}>
@@ -103,8 +103,11 @@ function ErrorBox() {
   const errorList = useContext(ErrorList.context)
   if (errorList.isEmpty())
     return null
-  const errorFragment = errorList.toArray().map(
-    e => <div className="Error"><span className="Explanation">{e.get("tag") || "Error"}:</span> <span className="content">{e.get("error") || "[Unknown error]"}</span></div>
+  const errorFragment = Array.from(errorList,
+    e => <div className="Error">
+      <span className="Explanation">{e.get("tag") || "Error"}:</span>
+      <span className="content">{e.get("error") || "[Unknown error]"}</span>
+    </div>
   )
   return <div className="ListBox ErrorBox">
     <div className="Header">Errors</div>
