@@ -5,9 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "various",
-  "license": "MIT",
-  "__comment": "libp2p api is pretty volatile so all versions have been requested as ~",
+  "author": "mcc",
+  "license": "CC0-1.0",
   "dependencies": {
     "immutable": "^4.0.0-rc.12",
     "libp2p": "^0.29.0",
