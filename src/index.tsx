@@ -1,4 +1,6 @@
 import { h, render, Component } from "preact";
+import linkState from 'linkstate';
+import { State, WrapStateContexts } from "./state"
 
 declare let require:any
 

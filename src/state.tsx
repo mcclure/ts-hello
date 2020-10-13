@@ -1,3 +1,8 @@
+// Tools for disseminating a piece of state to Preact context/hooks
+// To use: Keep your state variables inside State objects
+// Wrap components that need to use state in <StateContext state={}> tags
+// If you have a BUNCH of state objects, WrapStateContexts can make that easier
+
 import { h, render, Context, createContext, JSX, ComponentChildren } from "preact";
 import { useContext, useState, useEffect } from "preact/hooks";
 
@@ -25,6 +30,10 @@ class State<T> {
   	return useContext(this.context)
   }
 
+  // These weird little functions are why this class exists. You can't just save a
+  // React useState because a useState is connected to a single component and React
+  // components are constantly unmounting and remounting themselves.
+  // This "listener" tracking keeps track of that remounting.
   addListener(listener:(_:T)=>void) { this.listeners.add(listener) }
   removeListener(listener:(_:T)=>void) { this.listeners.delete(listener) }
 
@@ -47,9 +56,9 @@ function StateContext<T> (props:{state:State<T>, children:ComponentChildren}) {
 // Function to wrap a React component in several layers of StateContexts at once
 function WrapStateContexts(content:JSX.Element, states:State<any>[]) {
   for (let s of states) {
-      content = <StateContext state={s}>{content}</StateContext>
-    }
-    return content
+	content = <StateContext state={s}>{content}</StateContext>
+  }
+  return content
 }
 
 export { State, StateContext, WrapStateContexts }
