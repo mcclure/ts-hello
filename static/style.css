@@ -1,1 +1,6 @@
 body { font-family:sans-serif; }
+
+.EditBox { margin-left:-0.25em; } /* Left-flush despite input margin */
+.EditBox input { margin:0.25em; }
+
+.ListDisplay { margin-left:1em; margin-top:1em; }
