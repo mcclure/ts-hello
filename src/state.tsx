@@ -20,7 +20,7 @@ class State<T> {
   // Call to update value
   set(value:T) {
     this.value = value
-    for (let fn of this.listeners) {
+    for (const fn of this.listeners) {
       fn(this.value)
     }
   }
@@ -55,8 +55,8 @@ function StateContext<T> (props:{state:State<T>, children:ComponentChildren}) {
 
 // Function to wrap a React component in several layers of StateContexts at once
 function WrapStateContexts(content:JSX.Element, states:State<any>[]) {
-  for (let s of states) {
-	content = <StateContext state={s}>{content}</StateContext>
+  for (const s of states) {
+  	content = <StateContext state={s}>{content}</StateContext>
   }
   return content
 }
