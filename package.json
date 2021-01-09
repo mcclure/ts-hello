@@ -8,7 +8,9 @@
   "author": "mcc",
   "license": "CC0-1.0",
   "dependencies": {
+    "canvas2image-2": "^2.3.0",
     "preact": "^10.4.8",
+    "preact-resize-observer": "^1.0.0",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
   },

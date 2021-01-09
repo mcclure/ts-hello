@@ -1,1 +1,6 @@
-body { font-family:sans-serif; }
+body { font-family:sans-serif; border: 0; margin:0; background-color:#F0F0F0; }
+
+#content { width:100vw; height:100vh; }
+.Content, .initial-loading, .LargestPossibleCanvas { display:flex; align-items:center; justify-content:center; width:100vw; height:100vh; }
+
+.Controls { position:fixed; left:10px; top:10px; }
