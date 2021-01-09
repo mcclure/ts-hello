@@ -55,6 +55,12 @@ let parentNode = document.getElementById("content")
 let replaceNode = document.getElementById("initial-loading")
 
 function Content() {
+  if (!navigator.gpu) {
+      return <div className="TopError">
+        This app requires WebGPU. Either your browser does not support WebGPU, or you must enable an experimental flag to access it.
+      </div>
+  }
+
   return (
     <div className="Content">
       <Controls />

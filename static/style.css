@@ -1,5 +1,7 @@
 body { font-family:sans-serif; border: 0; margin:0; background-color:#F0F0F0; }
 
+.TopError { margin:30px; }
+
 #content { width:100vw; height:100vh; }
 .Content, .initial-loading, .LargestPossibleCanvas { display:flex; align-items:center; justify-content:center; width:100vw; height:100vh; }
 

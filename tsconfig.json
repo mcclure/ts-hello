@@ -9,6 +9,7 @@
         "jsxFactory": "h"
     },
     "include": [
-        "./src/**/*"
+        "./src/**/*",
+        "node_modules/@webgpu/types"
     ]
 }
