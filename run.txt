@@ -3,3 +3,6 @@ npm install
 
 # Run every time
 npx webpack
+
+# Smoke test
+npx webpack && (cd site && http-server -c-1)
