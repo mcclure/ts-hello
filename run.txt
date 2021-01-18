@@ -4,5 +4,9 @@ npm install
 # Run every time
 npx webpack
 
+# Run once, then when shaders change
+glslangValidator -V src/shader/triangle.vert -o site/triangle.vert.spv
+glslangValidator -V src/shader/triangle.frag -o site/triangle.frag.spv
+
 # Smoke test
 npx webpack && (cd site && http-server -c-1)
