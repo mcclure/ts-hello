@@ -9,7 +9,6 @@
   "license": "CC0-1.0",
   "dependencies": {
     "@webgpu/types": "0.0.32",
-    "canvas2image-2": "^2.3.0",
     "preact": "^10.4.8",
     "preact-resize-observer": "^1.0.0",
     "webpack": "^4.44.1",

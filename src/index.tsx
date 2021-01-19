@@ -1,8 +1,8 @@
 import { h, JSX, render, Component } from "preact";
 import { LargestPossibleCanvas, makeHidpi2D } from "./canvas"
 
-// @ts-ignore
-import canvas2image from "canvas2image-2"
+import _canvas2image from "./canvas2image"
+const canvas2image = _canvas2image("gpupresent")
 
 // ----- Data helpers -----
 
@@ -26,6 +26,14 @@ function AppCanvas({gpu}:{gpu:GPU}) {
   return <LargestPossibleCanvas onMount={async (canvas) => {
     const context = canvas.getContext("gpupresent")
     const gpuContext = (context as any) as GPUCanvasContext
+console.log("DRAWING")
+
+    const width  = canvas.width
+    const height = canvas.height
+    
+    // ARE YOU READING THIS IN 2022? REMOVE ME
+    // This next line is to work around a known bug in Chrome Canary as of 2021-01-18
+    canvas.width = width; canvas.height = height
 
     // To draw in WebGPU, you need the following things:
     // - You need mesh data to draw,
@@ -181,9 +189,6 @@ function AppCanvas({gpu}:{gpu:GPU}) {
     }
     queue.submit([ commandEncoder.finish() ]);
 
-    const width  = canvas.width
-    const height = canvas.height
-
     lastCanvas = {canvas, width, height}
   }} />
 }
@@ -193,9 +198,23 @@ function Controls() {
     <a href="#" onClick={handle(()=>{
       if (lastCanvas) {
         const {canvas, width, height} = lastCanvas
-        canvas2image.saveAsPNG(canvas, width, height)
+        canvas2image.saveAsPNG(canvas, width, height, "download-tdu")
       }
-    })}>⬇️</a>
+    })}>toDataURL</a>
+    <br />
+    <a href="#" onClick={handle(async ()=>{
+      if (lastCanvas) {
+        const {canvas, width, height} = lastCanvas
+        const bitmap = await createImageBitmap(canvas)
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = bitmap.width;
+        tempCanvas.height = bitmap.height;
+        const context = tempCanvas.getContext('bitmaprenderer');
+        context.transferFromImageBitmap(bitmap);
+
+        canvas2image.saveAsImage(tempCanvas, bitmap.width, bitmap.height, "png", "download-cib")
+      }
+    })}>createImageBitmap</a>
   </div>
 }
 
