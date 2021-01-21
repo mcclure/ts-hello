@@ -1,5 +1,6 @@
 import { h, JSX, render, Component } from "preact";
 import { LargestPossibleCanvas, makeHidpi2D } from "./canvas"
+import { State, WrapStateContexts } from "./state"
 
 import _canvas2image from "./canvas2image"
 const canvas2image = _canvas2image("gpupresent")
@@ -10,6 +11,8 @@ const canvas2image = _canvas2image("gpupresent")
 // ----- Data -----
 
 let lastCanvas:{canvas:HTMLCanvasElement, width:number, height:number} = null
+const animate = new State(false)
+const preserve = new State(false)
 
 // ----- Display helpers -----
 
@@ -23,8 +26,14 @@ function handle(f:()=>void) {
 }
 
 function AppCanvas({gpu}:{gpu:GPU}) {
-  return <LargestPossibleCanvas onMount={async (canvas) => {
-    const context = canvas.getContext("gpupresent")
+  let stillMounted = true
+  const preserveV = preserve.get()
+  const animateV = animate.get()
+
+  return <LargestPossibleCanvas onUnmount={() => {stillMounted = false}} onMount={async (canvas) => {
+    const attributes = preserveV ? { preserveDrawingBuffer: true } : undefined
+
+    const context = canvas.getContext("gpupresent", attributes)
     const gpuContext = (context as any) as GPUCanvasContext
 console.log("DRAWING")
 
@@ -43,6 +52,9 @@ console.log("DRAWING")
     // - You need a command buffer to tell the pipeline to execute,
     //   and render pass encoders to add commands to the command buffer,
     //   and a command buffer encoder to create the render pass encoders.
+    // - You need a swapchain to vend the texture that will be drawn on screen,
+    //   and each frame you need the texture to draw into
+    //   and a view on the texture to make the texture drawable.
 
     // You get a queue, from a device, from an adapter.
     // The queue is used to submit commands to be drawn.
@@ -56,11 +68,6 @@ console.log("DRAWING")
       format: "bgra8unorm",
       usage: GPUTextureUsage.OUTPUT_ATTACHMENT | GPUTextureUsage.COPY_SRC
     }
-    const swapchain: GPUSwapChain = gpuContext.configureSwapChain(swapChainDescription)
-
-    // Swapchain automatically creates a color texture (but not a depth texture)
-    const colorTexture = swapchain.getCurrentTexture()
-    const colorTextureView = colorTexture.createView()
 
     // Scene Data [position color, indices for a single triangle]
     const positions = new Float32Array([
@@ -167,34 +174,66 @@ console.log("DRAWING")
 
     const pipeline = device.createRenderPipeline(pipelineDesc);
 
-    const commandEncoder = device.createCommandEncoder();
-    {
-      const passEncoder = commandEncoder.beginRenderPass({ // GPURenderPassDescriptor
-        colorAttachments: [
-          { //GPURenderPassColorAttachmentDescriptor
-            attachment: colorTextureView,
-            loadValue: { r: 0, g: 0, b: 0, a: 1 },
-            storeOp: "store"
-          }
-        ],
-      });
-      passEncoder.setPipeline(pipeline);
-      passEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
-      passEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
-      passEncoder.setVertexBuffer(0, positionBuffer);
-      passEncoder.setVertexBuffer(1, colorBuffer);
-      passEncoder.setIndexBuffer(indexBuffer, "uint16");
-      passEncoder.drawIndexed(3, 1, 0, 0, 0);
-      passEncoder.endPass();
+    const swapchain: GPUSwapChain = gpuContext.configureSwapChain(swapChainDescription)
+
+    const frame = () => {
+      // Swapchain automatically creates a color texture (but not a depth texture)
+      const colorTexture = swapchain.getCurrentTexture()
+      const colorTextureView = colorTexture.createView()
+
+      const commandEncoder = device.createCommandEncoder();
+      {
+        const passEncoder = commandEncoder.beginRenderPass({ // GPURenderPassDescriptor
+          colorAttachments: [
+            { //GPURenderPassColorAttachmentDescriptor
+              attachment: colorTextureView,
+              loadValue: { r: 0, g: 0, b: 0, a: 1 },
+              storeOp: "store"
+            }
+          ],
+        });
+        passEncoder.setPipeline(pipeline);
+        passEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
+        passEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
+        passEncoder.setVertexBuffer(0, positionBuffer);
+        passEncoder.setVertexBuffer(1, colorBuffer);
+        passEncoder.setIndexBuffer(indexBuffer, "uint16");
+        passEncoder.drawIndexed(3, 1, 0, 0, 0);
+        passEncoder.endPass();
+      }
+      queue.submit([ commandEncoder.finish() ]);
     }
-    queue.submit([ commandEncoder.finish() ]);
+
+    if (animateV) {
+      const frameLoop = () => {
+        if (stillMounted) {
+          frame()
+          requestAnimationFrame(frameLoop)
+        }
+      }
+
+      requestAnimationFrame(frameLoop)
+    } else {
+      frame()
+    }
 
     lastCanvas = {canvas, width, height}
   }} />
 }
 
+function Checkbox({state, label}:{state:State<boolean>, label:string|JSX.Element}) {
+  const v = state.get()
+  return <span>
+          <input className="ToggleButton" type="checkbox" checked={v}
+            onInput={(e:JSX.TargetedEvent<HTMLInputElement>) => state.set(e.currentTarget.checked)} />
+            {label}
+         </span>
+}
+
 function Controls() {
   return <div className="Controls">
+    <Checkbox state={animate} label="Animate" /><br />
+    <Checkbox state={preserve} label="preserveDrawingBuffer" /><br />
     <a href="#" onClick={handle(()=>{
       if (lastCanvas) {
         const {canvas, width, height} = lastCanvas
@@ -239,6 +278,6 @@ function Content() {
 }
 
 render(
-  <Content />,
+  WrapStateContexts(<Content />, [animate, preserve]),
   parentNode, replaceNode
 );

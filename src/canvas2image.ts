@@ -15,10 +15,11 @@ const Canvas2Image = (function (contextType:string) {
     const $support = (function () {
         const canvas = document.createElement("canvas"),
             ctx = canvas.getContext(contextType);
+        const ctxBool = !!ctx
 
         return {
-            canvas: !!ctx,
-            imageData: !!ctx.getImageData,
+            canvas: ctxBool,
+            imageData: ctxBool && !!ctx.getImageData,
             dataURL: !!canvas.toDataURL,
             btoa: !!window.btoa,
         };
