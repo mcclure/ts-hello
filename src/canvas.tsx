@@ -29,7 +29,7 @@ function Canvas<T>(props : CanvasProps<T>) {
       props.width = width*devicePixelRatio
       props.height = height*devicePixelRatio
       canvasStyle = `width:${width}px; height:${height}px;`
-      console.log("DOING", canvasStyle)
+      console.log("CANVAS STYLE:", canvasStyle)
     }
   }
 
