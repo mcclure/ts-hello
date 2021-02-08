@@ -66,13 +66,13 @@ console.log("AppCanvas: DRAWING")
       // The queue is used to submit commands to be drawn.
       const adapter = await gpu.requestAdapter()
       const device = await adapter.requestDevice()
-      const queue = device.defaultQueue
+      const queue = device.queue
 
       // The swapchain is used to submit framebuffers [textures] to the display
       const swapChainDescription: GPUSwapChainDescriptor = {
         device: device,
         format: "bgra8unorm",
-        usage: GPUTextureUsage.OUTPUT_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
       }
 
       // Scene Data [position color, indices for a single triangle]
