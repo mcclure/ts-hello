@@ -13,7 +13,6 @@ const canvas2image = _canvas2image("gpupresent")
 let lastCanvas:{canvas:HTMLCanvasElement, width:number, height:number} = null
 const animate = new State(false)
 const printFps = new State(true)
-const preserve = new State(false)
 
 // ----- Display helpers -----
 
@@ -28,7 +27,6 @@ function handle(f:()=>void) {
 
 function AppCanvas({gpu}:{gpu:GPU}) {
   let stillMounted = true
-  const preserveV = preserve.get()
   const animateV = animate.get()
 
   return <LargestPossibleCanvas
@@ -37,9 +35,7 @@ function AppCanvas({gpu}:{gpu:GPU}) {
 console.log("AppCanvas: UNMOUNT")
     }} 
     onMount={async (canvas) => {
-      const attributes = preserveV ? { preserveDrawingBuffer: true } : undefined
-
-      const context = canvas.getContext("gpupresent", attributes)
+      const context = canvas.getContext("gpupresent", undefined)
       const gpuContext = (context as any) as GPUCanvasContext
 console.log("AppCanvas: DRAWING")
 
@@ -274,27 +270,6 @@ function Controls() {
   return <div className="Controls">
     <Checkbox state={animate} label="Animate" /><br />
     <Checkbox state={printFps} label="Print FPS" /><br />
-    <Checkbox state={preserve} label="preserveDrawingBuffer" /><br />
-    <a href="#" onClick={handle(()=>{
-      if (lastCanvas) {
-        const {canvas, width, height} = lastCanvas
-        canvas2image.saveAsPNG(canvas, width, height, "download-tdu")
-      }
-    })}>toDataURL</a>
-    <br />
-    <a href="#" onClick={handle(async ()=>{
-      if (lastCanvas) {
-        const {canvas, width, height} = lastCanvas
-        const bitmap = await createImageBitmap(canvas)
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = bitmap.width;
-        tempCanvas.height = bitmap.height;
-        const context = tempCanvas.getContext('bitmaprenderer');
-        context.transferFromImageBitmap(bitmap);
-
-        canvas2image.saveAsImage(tempCanvas, bitmap.width, bitmap.height, "png", "download-cib")
-      }
-    })}>createImageBitmap</a>
   </div>
 }
 
@@ -319,6 +294,6 @@ function Content() {
 }
 
 render(
-  WrapStateContexts(<Content />, [animate, preserve, printFps]),
+  WrapStateContexts(<Content />, [animate, printFps]),
   parentNode, replaceNode
 );
