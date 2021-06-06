@@ -1,11 +1,52 @@
+* { margin:0; padding:0; }
+html, body { height:100%; min-height:100%; }
 body { font-family:sans-serif; }
-.Header, .Explanation { font-weight:bold; }
-.ListBox { margin-top:1em; }
-.ListBox .List { display:inline-block; }
-.Id, .ErrorBox .Error { padding:0.2em; }
-.Id { font-family:monospace; }
-.ListBox .Id { margin-top:0.2em; }
-.UserBox .Id { background-color:gainsboro; }
-.ConnectBox .Id { background-color:#DEFDE0 }
-.PreconnectBox .Id { background-color:#FCF7DE }
-.ErrorBox .Error { font-size: 0.8em; background-color:#FDDFDF; }
+
+#content { height:100%; }
+#initial-loading { margin-top:2em; text-align:center; color:gainsboro; font-size:120%; font-weight:bold; }
+
+ul { margin-left:1em; list-style-position: inside; }
+input { padding:0.5em; }
+textarea { font-family:sans-serif; padding:1em; box-sizing: border-box; }
+
+a:link { font-weight:bold; }
+
+.Page { height:100%; display:flex; flex-direction:row; overflow:hidden; }
+
+.LoginBox { margin:1em; padding:1em; }
+.SiteTitle { margin-bottom:1em; font-size:140%; letter-spacing:0.05em; }
+.Disclaimers { margin-bottom:1em; }
+.LoginBox .Instructions { margin-bottom:0.5em; }
+.LoginBox input { padding:0.5em; margin-right:0.5em; }
+
+.Errors { color:darkred; font-weight:bold; margin-top:0.5em; }
+
+.Controls { height:100%; padding:1em; background-color:#B7D0EA; flex: 0 0 10em; order:0; border-right:2px solid #304963; }
+.PostBox {}
+.PostButton { margin-right:1em;}
+.PostLength { vertical-align: middle; font-size:75%; }
+.PostLength .Invalid { color:red; }
+
+.Content { padding:1em; overflow: scroll; flex:1; }
+.Content .Header { margin-bottom:0.5em; }
+.Content .Post { margin-top:0.5em; margin-bottom:0.5em; margin-left:0.5em; padding:0.5em; max-width:30em; background-color:#f5f5f5; }
+.Content .Post .PostMeta { margin-bottom:0.5em; display:flex; flex-direction:row; justify-content:space-between; }
+.Content .Post .PostMeta .Username { font-size:75%; font-weight:bold; }
+.Content .Post .PostMeta .Date { font-size:75%; }
+
+.Content .Header a:link,
+.Content .Header a:visited,
+.Content .Post .PostMeta .Username a:link,
+.Content .Post .PostMeta .Username a:visited,
+.Content .Post .PostMeta .Date a:link,
+.Content .Post .PostMeta .Date a:visited { text-decoration:none; color:black; }
+
+.Content .Header a:hover,
+.Content .Post .PostMeta .Username a:hover,
+.Content .Post .PostMeta .Date a:hover { text-decoration:underline; }
+
+.Content .Header a:active,
+.Content .Post .PostMeta .Username a:active,
+.Content .Post .PostMeta .Date a:active { text-decoration:underline; }
+
+.Content .Post .PostMeta .Date a:link { font-weight:normal; } /* Undo base a:link rule */

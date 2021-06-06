@@ -1,9 +1,9 @@
-This is a Typescript + Libp2p + Preact "Hello world" web app, intended for forking. Code is in `src/`, resources are in `static/` and when built it's installed in `site/`. Make sure to edit the package name, license and author in package.json when you fork it, and also edit license.txt unless you want to release in the public domain.
+This is a Typescript web app intended for demonstrating a possible bug in js-libp2p.
 
-When run, the app connects to Libp2p and lists the peers it finds or any errors it encounters.
+Running this test requires two machines: A desktop computer with a web browser and a remote server. In my tests, the desktop computer is behind NAT and the remote server is exposed to the general Internet. It is necessary the remote server not have HSTS strict-transport rules cached in the browser; I ensure this by running the test in its own Chrome user profile and using "Clear Browsing Data". To run the test, check out this repo on both desktop and server machines, edit BOUNCE-SERVER.js on both, and follow the instructions in [run.txt](run.txt). Note the "public key" needed on the desktop machine will not exist until bounce.js generates it in id.json on its first run.
 
-Created by Andi McClure based on the libp2p-in-the-browser demo from [js-libp2p](https://github.com/libp2p/js-libp2p).
+Created by Andi McClure.
 
-[Usage instructions](run.txt)
+[Build instructions](run.txt)
 
 [License](LICENSE.txt)

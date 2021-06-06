@@ -4,9 +4,10 @@
         "sourceMap": true,
         "noImplicitAny": true,
         "module": "commonjs",
-        "target": "es2015",
+        "target": "es2020",
         "jsx": "react",
-        "jsxFactory": "h"
+        "jsxFactory": "h",
+        "allowJs": true
     },
     "include": [
         "./src/**/*"

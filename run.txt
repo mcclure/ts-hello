@@ -1,5 +1,28 @@
 # Run once
 npm install
+git clone https://github.com/mcclure/immutable-js ../immutable-js --branch immutable-pr-oss
+npm link ../immutable-js
 
 # Run every time
 npx webpack
+
+# Run node
+node scripts/bounce.js
+
+# Smoke test
+npx webpack && (cd site && http-server -c-1)
+
+# Server 
+node scripts/bounce.js --id-file id.json
+
+### Test procedure ###
+
+# On server (must set BOUNCE-SERVER.js with hostname)
+# In js-libp2p-webrtc-star dir
+node src/sig-server/bin.js
+# In tempt dir
+node scripts/bounce.js --id-file id.json --protocol dht-test
+
+# On local machine, in tempt directory (must set BOUNCE-SERVER.js with hostname and public key from id.json)
+npx webpack && (cd site && http-server -c-1)
+# Run two browser tabs, open Inspect console in both, connect to 127.0.0.1

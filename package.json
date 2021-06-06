@@ -1,29 +1,41 @@
 {
-  "name": "libp2p-hello",
+  "name": "tempt",
   "version": "1.0.0",
-  "description": "TypeScript+Libp2p+Preact starting project",
+  "description": "MTA testbed",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "mcc",
-  "license": "CC0-1.0",
+  "license": "TBD",
   "dependencies": {
-    "immutable": "^4.0.0-rc.12",
-    "libp2p": "^0.29.0",
-    "libp2p-bootstrap": "^0.12.1",
-    "libp2p-mplex": "^0.10.0",
-    "libp2p-secio": "^0.13.1",
-    "libp2p-noise": "^2.0.1",
-    "libp2p-webrtc-star": "^0.20.1",
-    "libp2p-websockets": "^0.14.0",
-    "preact": "^10.4.8",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12"
+    "@msgpack/msgpack": "^2.7.0",
+    "@types/streamsaver": "^2.0.0",
+    "base2048": "^1.0.4",
+    "base32768": "^2.0.2",
+    "base65536": "^3.0.3",
+    "libp2p": "^0.31.6",
+    "libp2p-bootstrap": "^0.12.3",
+    "libp2p-kad-dht": "^0.22.0",
+    "libp2p-mplex": "^0.10.3",
+    "libp2p-noise": "^3.0.0",
+    "libp2p-webrtc-star": "^0.22.3",
+    "libp2p-websockets": "^0.15.7",
+    "linkstate": "^2.0.1",
+    "multihashing-async": "^2.1.2",
+    "preact": "^10.5.13",
+    "streamsaver": "^2.0.5",
+    "tweetnacl": "^1.0.3"
   },
+  "devDependenciesComment": "wrtc, commander, commander.js-error are needed for bounce.js only",
   "devDependencies": {
-    "ts-loader": "^8.0.3",
-    "copy-webpack-plugin": "^6.1.0",
-    "source-map-loader": "^1.1.0",
-    "typescript": "^4.0.2"
+    "commander": "^7.2.0",
+    "commander.js-error": "^1.1.0",
+    "copy-webpack-plugin": "^6.3.1",
+    "source-map-loader": "^1.1.2",
+    "ts-loader": "^8.0.11",
+    "typescript": "^4.3.2",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12",
+    "wrtc": "^0.4.7"
   }
 }

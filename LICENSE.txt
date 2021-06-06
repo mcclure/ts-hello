@@ -1,3 +1,1 @@
-The contents of this directory are released by their author into the public domain. If public domain is not an option, it is made available to you under the terms of the Creative Commons Zero license: https://creativecommons.org/publicdomain/zero/1.0/legalcode
-
-Some of the npm libraries used, in particular js-libp2p, will have their own license encumbrances.
+License TBD.
