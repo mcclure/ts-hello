@@ -37,6 +37,7 @@ async function ulebLengthFromStream(reader:ByteReader) {
 		const count = await reader.readBytes(tempBuffer, 1)
 		if (!count)
 			throw new Error("Uleb ran out of buffer after " + bytes + " bytes")
+console.log("Uleb debug: Got byte", tempBuffer[0])
 		result <<= 7
 		result |= (tempBuffer[0] & 0x7F)
 		bytes++
