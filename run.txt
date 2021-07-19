@@ -21,7 +21,7 @@ node scripts/bounce.js --id-file id.json
 # In js-libp2p-webrtc-star dir
 node src/sig-server/bin.js
 # In tempt dir
-node scripts/bounce.js --id-file id.json --protocol dht-test
+node scripts/bounce.js --id-file id.json --protocol kad-dht-hello
 
 # On local machine, in tempt directory (must set BOUNCE-SERVER.js with hostname and public key from id.json)
 npx webpack && (cd site && http-server -c-1)

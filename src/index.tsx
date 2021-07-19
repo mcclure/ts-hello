@@ -1,21 +1,27 @@
 import { h, JSX, render, Component } from "preact"
 import linkState from 'linkstate';
-import { State, WrapStateContexts } from "./state"
-import { Record, OrderedSet, List } from "immutable-oss"
+import { State, WrapStateContexts } from "./gui/state"
+import { writeStreamWithUleb, ulebLengthFromStream, lengthToUleb } from "./bin/leb"
+import { StreamByteReader, ItBlByteReader } from "./bin/byteStream"
+import { Record, SortedList, List, OrderedSet } from "immutable-oss"
+import { encode, decode } from "@msgpack/msgpack"
+import { createWriteStream } from "streamsaver" // Currently used only in Debug
 import { Node } from "./p2p/browser-bundle" // Networking
 
 import { encode as encode11, decode as decode11 } from 'base2048'
 import { encode as encode15, decode as decode15 } from 'base32768'
 import { encode as encode16, decode as decode16 } from 'base65536'
 const multihashing = require("multihashing-async")
-const CID = require('cids') // FIXME: This isn't in package.json. Where did it come from? 
+const CID = require('cids')
+const itPipe = require('it-pipe')
 
-import { box as naclBox } from 'tweetnacl';
+import { sign as naclSign } from 'tweetnacl';
 
-declare let require:any
-
-const siteName = "kad-dht test"
-const protocolName = "dht-test"
+const siteName = "DHT Connection Test"
+const helloProtocolName = "kad-dht-hello"
+const protocolName = "tempt-test"
+const protocolVersion = "0.0.0"
+const postMaxLength = 500
 const verboseNetwork = true
 
 // How this works:
@@ -33,12 +39,16 @@ class SimpleRef<T> {
   set(value:T) { this.value = value }
 }
 
-type UserProps = {signKey:nacl.BoxKeyPair}
+// "DownloadTime" refers to when the status was saved into memory
+type UserProps = {name?:string, post?:string, downloadTime:Date, isSelf:boolean, signKey:nacl.SignKeyPair, id:number}
+let userPropsGenerator = 1
+function nextUserPropsId() { return userPropsGenerator++ }
 
-const User = Record<UserProps>({signKey:null})
+const User = Record<UserProps>({name:null, post:null, downloadTime:null, isSelf: false, signKey:null, id:0})
 const login = new State(User())
+const feed = new State(SortedList<UserProps, Date>(null, (userProps)=>userProps.downloadTime))
+const overrideUser = new State<UserProps>(null) // JUL21 remove maybe?
 const debugMode = new State(false)
-const debugOfflineMode = new State(false)
 
 // ----- Data helpers -----
 
@@ -51,9 +61,14 @@ function handle(f:()=>void) {
   }
 }
 
+async function HashRaw(source:Uint8Array) {
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', source))
+}
+
 // ----- Networking -----
 
-const protocolString = `/${protocolName}`
+const helloProtocolString = `/${helloProtocolName}`
+const protocolString = `/${protocolName}/${protocolVersion}`
 
 enum ConnectionStatus {
   None, // Just started up
@@ -83,6 +98,10 @@ function logError(tag:string, err:Error, isFatal:boolean) {
   if (isFatal) connectionStatus.set( ConnectionStatus.Failed )
 }
 
+function logErrorIncoming(err:string) {
+  console.log("Incoming connection error", err)
+}
+
 async function cidForData(data:Uint8Array) {
   // We want to use the 256-bit public key as a 256-bit Kademlia key.
   // libp2p won't let us do that. We have to convert it to a "multihash" and then to a "CID".
@@ -105,21 +124,73 @@ function netConnect() {
 
       phase = "Configuration"
       
-      node.handle([protocolString], ({ protocol, stream }:{protocol:string, stream:any}) => {
+      node.handle([helloProtocolString], ({ protocol, stream }:{protocol:string, stream:any}) => {
         (async () => {
-          // NODE CONNECT HERE
+          // DO NOTHING? TODO: CONSIDER CLOSING STREAM?
         })()
       })
 
+      node.handle([protocolString], ({ protocol, stream }:{protocol:string, stream:any}) => {
+        (async () => {
+          // NODE CONNECT HERE
+          console.log("PROTOCOL CONNECT!", stream.timeline, stream)
+
+          itPipe(
+            stream,
+            async function (source:any) {
+              // const signKey = login.value.get('signKey')
+              const byteReader = new ItBlByteReader(source)
+              const length = signKey.publicKey.length
+              if (length > 0) {
+                const bytes = new Uint8Array(length)
+                await byteReader.readBytes(bytes, length)
+                let match = true
+                for (let c = 0; match && c < length; c++) {
+                  if (bytes[c] == signKey.publicKey[c]) {
+                    match = false
+                  }
+                }
+                if (match) {
+                  // Note: Sign but don't encrypt
+                  const userProps = login.value
+                  const innerObject = { name:userProps.get("name"), post:userProps.get("post"), updateTime:userProps.get('downloadTime') }
+                  const innerData = encode(innerObject, {initialBufferSize:128})
+                  const signData = naclSign.detached(innerData, userProps.get('signKey').secretKey)
+                  const outerObject = { sign:signData, data:innerData }
+                  const data = encode(outerObject, {initialBufferSize:1})
+                  const tempBuffer = new Uint8Array(8)
+                  const lengthLength = lengthToUleb(tempBuffer, data.byteLength)
+                  const lengthBuffer = tempBuffer.slice(0, lengthLength)
+console.log("Sending this many bytes of data", data.byteLength, lengthBuffer)
+                  return itPipe(
+                    [lengthBuffer, data],
+                    stream
+                  )
+                } else {
+                  logErrorIncoming("Other user requested message, but they asked for the wrong key")
+                }
+              } else {
+                logErrorIncoming("Internal error: No public key")
+              }
+            }
+          )
+          // JUL21: Here wait for number then return result
+
+          console.log("CONNECTED PIPE", stream.timeline)
+        })()
+      })
+
+
       // Don't connect to or gossip about nodes unless they support the required protocol
       node.peerStore.on('change:protocols', ({ peerId, protocols }:{peerId:any, protocols:any}) => {
-        if (!protocols.includes(protocolString)) {
+        if (!protocols.includes(helloProtocolString)) {
           node.hangUp(peerId)
           node.peerStore.addressBook.delete(peerId)
           if (verboseNetwork) console.log("Rejecting peer", peerId.toB58String(), "for lack of protocol", protocolString, "supported protocols", protocols)
+        } else {
+          if (verboseNetwork) console.log("Accepting peer", peerId.toB58String(), "with protocol", protocolString)
+          // JUL21: Do send here or lower?
         }
-        else if (verboseNetwork) console.log("Accepting peer", peerId.toB58String(), "with protocol", protocolString)
-        // DO WORK HERE
       })
 
       node.on('peer:discovery', (peerId:any) => {
@@ -160,15 +231,21 @@ function netConnect() {
         })
       }
 
+      phase = "Please hold..."
+      const delay = require('delay')
+      // See https://github.com/libp2p/js-libp2p/issues/950
+      await delay(5000)
+
       phase = "Publish"
 
-      const delay = require('delay')
-      await delay(30000)
       const signKey = login.value.get('signKey')
-      const cid = await cidForData(signKey.publicKey)
+      const signHash = await HashRaw(signKey.publicKey)
+      const cid = await cidForData(signHash)
       console.log("PROVIDING", cid)
       await node.contentRouting.provide(cid) // Warning: Do this too early 
       globalNode = node
+
+      phase = "Connected"
     } catch (e) {
       logError(`${phase} failure`, e, true)
     }
@@ -184,38 +261,67 @@ function netConnect() {
 // is assumed good, because it means you either have global or form state but never both
 
 // Modal "pick a username" box
-type LoginBoxState = {name:string,error?:string}
+type LoginBoxState = {name:string,post:string,error?:string[]}
 class LoginBox extends Component<{}, LoginBoxState> {
   constructor(props:{}) {
     super(props)
-    this.state = {name:''}
+    this.state = {name:'', post:''}
   }
   handleSubmit() {
-    const signKey = naclBox.keyPair()
-    login.set(login.value.set('signKey', signKey))
+    if (this.state.name && this.state.post) {
+      const signKey = naclSign.keyPair()
 
-    netConnect()
+      login.set(login.value.set('name', this.state.name)
+                           .set('post', this.state.post)
+                           .set('downloadTime', new Date())
+                           .set('isSelf', true)
+                           .set('signKey', signKey)
+                           .set('id', nextUserPropsId()))
 
-    console.log("Follow-code versions (all 3 identical):")
-    console.log(encode11(signKey.publicKey))
-    console.log(encode15(signKey.publicKey))
-    console.log(encode16(signKey.publicKey))
+      netConnect()
+
+      //JUL21: Save these for display
+      console.log("Encoded:")
+      console.log(encode11(signKey.publicKey))
+      console.log(encode15(signKey.publicKey))
+      console.log(encode16(signKey.publicKey))
+    } else {
+      this.setState({error:
+        (this.state.name ? [] : ["No name entered"]).concat
+        (this.state.post ? [] : ["No post entered"])
+      })
+    }
   }
   render() {
-    let error:JSX.Element
+    let error:JSX.Element[]
     if (this.state.error) {
-      error = <div className="Errors">{this.state.error}</div>
+      error = this.state.error.map(e => <div className="Errors">{e}</div>)
     }
     return (
       <div className="LoginBox">
         <div className="SiteTitle">{siteName}</div>
-        <div className="Disclaimers">This is a test. All interesting information is in the JavaScript debug console.
-        </div>
-        <div className="Instructions">Open this in two tabs. Copy a "follow code" (any) out of one tab's JS console, into the "Follow" box of the other.</div>
         <form onSubmit={(e)=>{e.preventDefault(); this.handleSubmit(); return true}}>
+          <div className="Instructions">Enter your name.</div>
+          <label>
+            <input type="text" value={this.state.name} onInput={linkState(this, 'name')} />
+          </label>
+
+          <br /><br />
+
+          <div className="Instructions">What do you have to say?</div>
+          <textarea placeholder="Type something here" rows={4} cols={60} 
+              value={this.state.post} onInput={linkState(this, 'post')}/>
+
+          <br /><br />
+
           <input type="submit" value="Login" />
         </form>
         {error}
+
+        <hr />
+        <div className="Disclaimers">
+          <b>Warning:</b> This is a P2P application. This means <b>your IP address</b>, and therefore your location to the fidelity of the city or better, <b>will be visible to other users</b>.
+        </div>
       </div>
     )
   }
@@ -228,7 +334,7 @@ let replaceNode = document.getElementById("initial-loading")
 const startingPercent = /^\%/
 
 // Left side "make post" / controls box
-type ControlsState = {post:string,postError?:string,follow:string,followError?:string}
+type ControlsState = {follow:string,followError?:string}
 class Controls extends Component<any, any> {
   constructor(props:{}) {
     super(props)
@@ -242,21 +348,43 @@ class Controls extends Component<any, any> {
       try { f1 = decode11(follow) } catch (e) {}
       try { f2 = decode15(follow) } catch (e) {}
       try { f3 = decode16(follow) } catch (e) {}
-      const result = f1 || f2 || f3
-      console.log("SEARCHING", f1, f2, f3)
-      if (!result) {
+      const followKey = f1 || f2 || f3
+      console.log("SEARCHING", f1, f2, f3, followKey)
+      if (!followKey) {
         this.setState({followError:"Couldn't recognize follow code"})
       } else if (!globalNode) {
         this.setState({followError:"Not connected yet"})
       } else {
-        const cid = await cidForData(result)
+        const followHash = await HashRaw(followKey)
+        const cid = await cidForData(followHash)
         console.log("SEARCHING 2", cid)
-        // As elsewehre: I don't know how I'm supposed to access the "._dht" object. The _dht key appears to work at least.
+        let targetMultiaddr
         for await (const provider of globalNode.contentRouting.findProviders(cid)) {
           console.log("GOT")
           console.log(provider)
+          targetMultiaddr = provider
+          break
         }
         console.log("DONE SEARCH")
+
+        // BEGIN DOWNLOAD
+        const { stream } = await globalNode.dialProtocol(targetMultiaddr.id, protocolString)
+
+        itPipe( // Intentionally leak promise
+          [followKey],
+          stream, // "Write to the stream, and pass its output to the next function"
+          async function (source:any) {
+            const byteReader = new ItBlByteReader(source)
+            console.log("RECEIVING FROM FOLLOW")
+            const length = await ulebLengthFromStream(byteReader)
+            const bytes = new Uint8Array(length)
+            await byteReader.readBytes(bytes, length)
+            const msg = decode(bytes.buffer)
+            console.log("RESULT", msg)
+
+            //JUL21 Download here
+          }
+        )
       }
     } catch (e) {
       console.log("handleFollow error", e)
@@ -294,6 +422,12 @@ class Controls extends Component<any, any> {
       followError = <div className="Errors">{this.state.followError}</div>
     }
 
+    // ---- READY DEBUG ----
+    if (debugModeV) { // Hidden / debug mode buttons
+      debugButtons = [
+        //JUN21 Network status here?
+      ]
+    }
     return (
       <div className="Controls">
 
@@ -301,10 +435,10 @@ class Controls extends Component<any, any> {
           onSubmit={handle(()=>this.handleFollow())}
         >
           <div>
-            <input type="text" placeholder="Paste follow code"
+            <input type="text" placeholder="Paste DHT address"
               value={this.state.follow} onInput={linkState(this, 'follow')}/>
           </div>
-          <input className="FollowButton" type="submit" value="Follow" />
+          <input className="FollowButton" type="submit" value="Connect" />
           {count}
         </form>
         {followError}
@@ -313,22 +447,54 @@ class Controls extends Component<any, any> {
 
         {connecting}
         {networkErrors}
+        <div className="DebugControls">
+          <input className="ToggleButton" type="checkbox" value="Debug" checked={debugModeV}
+            onInput={(e:JSX.TargetedEvent<HTMLInputElement>) => debugMode.set(e.currentTarget.checked)} />
+            DEBUG<br />
+          {debugButtons}
+        </div>
       </div>
     )
   }
 }
 
-function ContentPane() {
+// Render a post.
+function PostContent({userProps}:{userProps:UserProps}) {
+  return <div className="Post">
+      <div className="PostMeta">
+        <div className="Username">{userProps.name}</div>
+      </div>
+      <div className="PostContent">{userProps.post}</div>
+    </div>
+}
+
+// Right side content area -- feed
+function FeedPane({feedList}:{feedList:SortedList<UserProps>}) {
+  const postDivs:JSX.Element[] = []
+  const size = feedList.size
+  let idx = 1
+
+  postDivs.length = size
+  for (const userProps of feedList) {
+    const key = userProps.id
+    postDivs[size - idx++] = 
+      <PostContent key={key} userProps={userProps} />
+  }
   return <div className="Content">
-    Left blank
+    <div className="Header">Messages:</div>
+    {postDivs}
   </div>
+}
+
+function ContentPane() {
+  return <FeedPane feedList={feed.get()} />
 }
 
 // Toplevel element, handles state
 function Page() {
   const loginV = login.get()
 
-  if (!loginV.get('signKey')) {
+  if (!loginV.get('name')) {
     return <LoginBox />
   }
 
@@ -344,6 +510,6 @@ render(
   WrapStateContexts(<Page />, [
     login,
     connectionStatus, errorList,
-    debugMode, debugOfflineMode]),
+    debugMode]),
   parentNode, replaceNode
 )

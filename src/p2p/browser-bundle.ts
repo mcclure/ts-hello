@@ -43,6 +43,15 @@ const Node = Libp2p.create({
         enabled: true,
         list: bootstrapList
       }
+    },
+    dht: {                        // Possible none of this is required except toplevel enabled:true
+      kBucketSize: 20,
+      enabled: true,
+      randomWalk: {
+        enabled: true,            // Allows to disable discovery (enabled by default)
+        interval: 300e3,
+        timeout: 10e3
+      }
     }
   }
 })

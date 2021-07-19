@@ -14,6 +14,7 @@ a:link { font-weight:bold; }
 .Page { height:100%; display:flex; flex-direction:row; overflow:hidden; }
 
 .LoginBox { margin:1em; padding:1em; }
+.LoginBox hr { margin-top:1em; }
 .SiteTitle { margin-bottom:1em; font-size:140%; letter-spacing:0.05em; }
 .Disclaimers { margin-bottom:1em; }
 .LoginBox .Instructions { margin-bottom:0.5em; }

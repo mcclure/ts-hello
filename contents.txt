@@ -1,0 +1,36 @@
+Repo map
+
+### Toplevel
+
+doc/
+	Protocol documentation
+
+scripts/
+	Standalone scripts. bounce server lives here
+
+site/
+	Build scripts will generate this dir with completed site
+
+src/
+	Typescript code
+
+static/
+	Literal files to be copied into site/ on build
+
+contents.txt, run.txt, LICENSE.txt, README.md: Repo docs
+package.json, package-lock.json, tsconfig.json, webpack.config.js: Build files
+
+### Source
+
+src/bin
+	Reading/writing binary representation of MTA or other files
+src/conn
+	For handling a single bidi communication channel with a single peer
+src/gui
+	React code lives here
+src/p2p
+	For communicating with the p2p network itself as opposed to a single peer
+
+Module dependencies [never cycle]:
+	/ -> bin, conn, gui, p2p
+	conn -> bin
