@@ -19,7 +19,7 @@ import { sign as naclSign } from 'tweetnacl';
 
 const siteName = "DHT Connection Test"
 const helloProtocolName = "kad-dht-hello"
-const protocolName = "tempt-test"
+const protocolName = "cruddy-dht-demo-bug"
 const protocolVersion = "0.0.0"
 const postMaxLength = 500
 const verboseNetwork = true
