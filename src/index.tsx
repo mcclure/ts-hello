@@ -144,6 +144,7 @@ function netConnect() {
               if (length > 0) {
                 const bytes = new Uint8Array(length)
                 await byteReader.readBytes(bytes, length)
+                console.log("KEY QUERY:", bytes)
                 let match = true
                 for (let c = 0; match && c < length; c++) {
                   if (bytes[c] == signKey.publicKey[c]) {
