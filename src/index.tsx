@@ -3,7 +3,7 @@ import linkState from 'linkstate';
 import { State, WrapStateContexts } from "./gui/state"
 import { writeStreamWithUleb, ulebLengthFromStream, lengthToUleb } from "./bin/leb"
 import { StreamByteReader, ItBlByteReader } from "./bin/byteStream"
-import { Record, SortedList, List, OrderedSet } from "immutable-oss"
+import { Record, List, OrderedSet } from "immutable-oss"
 import { encode, decode } from "@msgpack/msgpack"
 import { createWriteStream } from "streamsaver" // Currently used only in Debug
 import { Node } from "./p2p/browser-bundle" // Networking
@@ -46,7 +46,7 @@ function nextUserPropsId() { return userPropsGenerator++ }
 
 const User = Record<UserProps>({name:null, post:null, downloadTime:null, isSelf: false, signKey:null, id:0})
 const login = new State(User())
-const feed = new State(SortedList<UserProps, Date>(null, (userProps)=>userProps.downloadTime))
+const feed = new State(List<UserProps>())
 const overrideUser = new State<UserProps>(null) // JUL21 remove maybe?
 const debugMode = new State(false)
 
@@ -469,7 +469,7 @@ function PostContent({userProps}:{userProps:UserProps}) {
 }
 
 // Right side content area -- feed
-function FeedPane({feedList}:{feedList:SortedList<UserProps>}) {
+function FeedPane({feedList}:{feedList:List<UserProps>}) {
   const postDivs:JSX.Element[] = []
   const size = feedList.size
   let idx = 1
