@@ -159,10 +159,10 @@ function netConnect() {
                   const signData = naclSign.detached(innerData, userProps.get('signKey').secretKey)
                   const outerObject = { sign:signData, data:innerData }
                   const data = encode(outerObject, {initialBufferSize:1})
-                  const tempBuffer = new Uint8Array(8)
-                  const lengthLength = lengthToUleb(tempBuffer, data.byteLength)
-                  const lengthBuffer = tempBuffer.slice(0, lengthLength)
-console.log("Sending this many bytes of data", data.byteLength, lengthBuffer)
+                  const tempBuffer = new Uint8Array(1)
+                  const lengthLength = lengthToUleb(tempBuffer, 1)
+                  const lengthBuffer = tempBuffer
+console.log("Sending this many bytes of data", data.byteLength, lengthBuffer[0], lengthBuffer)
                   return itPipe(
                     [lengthBuffer, data],
                     stream
