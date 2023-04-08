@@ -35,8 +35,12 @@ function AppCanvas({gpu}:{gpu:GPU}) {
 console.log("AppCanvas: UNMOUNT")
     }} 
     onMount={async (canvas) => {
-      const context = canvas.getContext("gpupresent", undefined)
+      const context = canvas.getContext("webgpu", undefined)
       const gpuContext = (context as any) as GPUCanvasContext
+
+      if (!gpuContext)
+        throw new Error('No GPU context!');
+
 console.log("AppCanvas: DRAWING")
 
       const width  = canvas.width
@@ -65,9 +69,9 @@ console.log("AppCanvas: DRAWING")
       const queue = device.queue
 
       // The swapchain is used to submit framebuffers [textures] to the display
-      const swapChainDescription: GPUSwapChainDescriptor = {
+      const canvasConfiguration: GPUCanvasConfiguration = {
         device: device,
-        format: "bgra8unorm",
+        format: gpu.getPreferredCanvasFormat(), // "bgra8unorm",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
       }
 
@@ -116,20 +120,20 @@ console.log("AppCanvas: DRAWING")
 
       const layout: GPUPipelineLayout = device.createPipelineLayout({bindGroupLayouts:[]});
 
-      const positionBufferDesc: GPUVertexBufferLayoutDescriptor = {
+      const positionBufferDesc: GPUVertexBufferLayout = {
         attributes: [{ // GPUVertexAttributeDescriptor
           shaderLocation: 0, // [[attribute(0)]]
           offset: 0,
-          format: "float3"
+          format: "float32x3"
         }],
         arrayStride: 4 * 3, // sizeof(float) * 3
         stepMode: "vertex"
       };
-      const colorBufferDesc: GPUVertexBufferLayoutDescriptor = {
+      const colorBufferDesc: GPUVertexBufferLayout = {
         attributes: [{
           shaderLocation: 1, // [[attribute(1)]]
           offset: 0,
-          format: "float3"
+          format: "float32x3"
         }],
         arrayStride: 4 * 3, // sizeof(float) * 3
         stepMode: "vertex"
@@ -139,36 +143,33 @@ console.log("AppCanvas: DRAWING")
       const pipelineDesc: GPURenderPipelineDescriptor = {
         layout,
 
-        vertexStage: { // GPUShaderModuleDescriptor
+        vertex: { // GPUVertexState
           module: vShader,
-          entryPoint: "main"
+          entryPoint: "main",
+          buffers: [ positionBufferDesc, colorBufferDesc ]
         },
-        fragmentStage: {
+        fragment: {
           module: fShader,
-          entryPoint: "main"
+          entryPoint: "main",
+          targets: [ { // GPUColorStateDescriptor
+            format: gpu.getPreferredCanvasFormat(), // In early versions this was "bgra8unorm",
+            blend: {
+              alpha: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              },
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
+            },
+            writeMask: GPUColorWrite.ALL
+          } ]
         },
-
-        primitiveTopology: "triangle-list",
-        colorStates: [ { // GPUColorStateDescriptor
-          format: "bgra8unorm",
-          alphaBlend: {
-            srcFactor: "src-alpha",
-            dstFactor: "one-minus-src-alpha",
-            operation: "add"
-          },
-          colorBlend: {
-            srcFactor: "src-alpha",
-            dstFactor: "one-minus-src-alpha",
-            operation: "add"
-          },
-          writeMask: GPUColorWrite.ALL
-        } ],
-
-        vertexState: { // GPUVertexStateDescriptor
-          //indexFormat: "uint16", // This line is only allowed for triangle strips
-          vertexBuffers: [ positionBufferDesc, colorBufferDesc ]
-        },
-        rasterizationState: { // GPURasterizationStateDescriptor
+        primitive: { // GPUPrimitiveState
+	  topology: "triangle-list",
           frontFace: "cw",
           cullMode: "none"
         }
@@ -176,14 +177,14 @@ console.log("AppCanvas: DRAWING")
 
       const pipeline = device.createRenderPipeline(pipelineDesc);
 
-      const swapchain: GPUSwapChain = gpuContext.configureSwapChain(swapChainDescription)
+      gpuContext.configure(canvasConfiguration)
 
       let lastPrintedFps:number // Date.getTime value
       let fpsSince = 1 // How many RAFs since last fps print?
 
       const frame = () => {
         // Swapchain automatically creates a color texture (but not a depth texture)
-        const colorTexture = swapchain.getCurrentTexture()
+        const colorTexture = gpuContext.getCurrentTexture()
         const colorTextureView = colorTexture.createView()
 
         const commandEncoder = device.createCommandEncoder();
@@ -218,9 +219,10 @@ console.log("AppCanvas: DRAWING")
 
           const passEncoder = commandEncoder.beginRenderPass({ // GPURenderPassDescriptor
             colorAttachments: [
-              { //GPURenderPassColorAttachmentDescriptor
-                attachment: colorTextureView,
-                loadValue: { r,g,b, a: 1 },
+              { //GPURenderPassColorAttachment
+                view: colorTextureView,
+                clearValue: { r,g,b, a: 1 },
+                loadOp: "clear",
                 storeOp: "store"
               }
             ],
@@ -233,7 +235,7 @@ console.log("AppCanvas: DRAWING")
           passEncoder.setVertexBuffer(1, colorBuffer);
           passEncoder.setIndexBuffer(indexBuffer, "uint16");
           passEncoder.drawIndexed(3, 1, 0, 0, 0);
-          passEncoder.endPass();
+          passEncoder.end();
         }
         queue.submit([ commandEncoder.finish() ]);
       }
