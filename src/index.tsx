@@ -3,7 +3,7 @@ import { LargestPossibleCanvas, makeHidpi2D } from "./canvas"
 import { State, WrapStateContexts } from "./state"
 
 import _canvas2image from "./canvas2image"
-const canvas2image = _canvas2image("gpupresent")
+const canvas2image = _canvas2image("webgpu")
 
 // ----- Data helpers -----
 
@@ -41,7 +41,7 @@ console.log("AppCanvas: UNMOUNT")
       if (!gpuContext)
         throw new Error('No GPU context!');
 
-console.log("AppCanvas: DRAWING")
+console.log("AppCanvas: READY")
 
       const width  = canvas.width
       const height = canvas.height
@@ -58,7 +58,7 @@ console.log("AppCanvas: DRAWING")
       // - You need a command buffer to tell the pipeline to execute,
       //   and render pass encoders to add commands to the command buffer,
       //   and a command buffer encoder to create the render pass encoders.
-      // - You need a swapchain to vend the texture that will be drawn on screen,
+      // - You need a swapchain [FIXME] to vend the texture that will be drawn on screen,
       //   and each frame you need the texture to draw into
       //   and a view on the texture to make the texture drawable.
 
@@ -113,8 +113,10 @@ console.log("AppCanvas: DRAWING")
       const loadShader = async (shaderPath: string) =>
         await device.createShaderModule({code: await loadData(shaderPath)})
 
-      const vShader = await loadShader("triangle.vert.wgsl")
-      const fShader = await loadShader("triangle.frag.wgsl")
+      const [vShader, fShader] = await Promise.all([
+        loadShader("triangle.vert.wgsl"), loadShader("triangle.frag.wgsl")])
+
+console.log("AppCanvas: SHADERS COMPILED")
 
       const layout: GPUPipelineLayout = device.createPipelineLayout({bindGroupLayouts:[]});
 
@@ -167,7 +169,7 @@ console.log("AppCanvas: DRAWING")
           } ]
         },
         primitive: { // GPUPrimitiveState
-	  topology: "triangle-list",
+          topology: "triangle-list",
           frontFace: "cw",
           cullMode: "none"
         }
@@ -176,6 +178,8 @@ console.log("AppCanvas: DRAWING")
       const pipeline = device.createRenderPipeline(pipelineDesc);
 
       gpuContext.configure(canvasConfiguration)
+
+console.log("AppCanvas: DRAWING")
 
       let lastPrintedFps:number // Date.getTime value
       let fpsSince = 1 // How many RAFs since last fps print?
