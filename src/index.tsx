@@ -109,14 +109,12 @@ console.log("AppCanvas: DRAWING")
 
       // 👋 Helper function for creating GPUShaderModule(s) out of SPIR-V files
       const loadData = async (filePath: string) =>
-        fetch(new Request(filePath), { method: "GET", mode: "cors" }).then((res) =>
-          res.arrayBuffer().then((arr) => new Uint32Array(arr))
-        )
+        await fetch(new Request(filePath), { method: "GET", mode: "cors" }).then((res) => res.text())
       const loadShader = async (shaderPath: string) =>
         await device.createShaderModule({code: await loadData(shaderPath)})
 
-      const vShader = await loadShader("triangle.vert.spv")
-      const fShader = await loadShader("triangle.frag.spv")
+      const vShader = await loadShader("triangle.vert.wgsl")
+      const fShader = await loadShader("triangle.frag.wgsl")
 
       const layout: GPUPipelineLayout = device.createPipelineLayout({bindGroupLayouts:[]});
 
