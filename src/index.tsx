@@ -45,10 +45,6 @@ console.log("AppCanvas: READY")
 
       const width  = canvas.width
       const height = canvas.height
-      
-      // ARE YOU READING THIS IN 2022? REMOVE ME
-      // This next line is to work around a known bug in Chrome Canary as of 2021-01-18
-      canvas.width = width; canvas.height = height
 
       // To draw in WebGPU, you need the following things:
       // - You need mesh data to draw,
