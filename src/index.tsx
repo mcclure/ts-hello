@@ -210,7 +210,7 @@ console.log("AppCanvas: DRAWING")
 
             const time = (Math.cos( now/(1000*2) ) + 1)/2 // Intentionally no pi factor
 
-            r = time; g = b = time/2
+            r = time; g = b = time/2 // Pulsate background color red
           } else {
             r = g = b = 0
           }
