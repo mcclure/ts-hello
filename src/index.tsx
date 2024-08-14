@@ -2,23 +2,10 @@ import { h, render, Component } from "preact";
 
 declare let require:any
 
-let parentNode = document.getElementById("content")
-let replaceNode = document.getElementById("initial-loading")
-
-class Content extends Component<any, any> {
-  constructor(props:{}) {
-    super(props);
-    this.state = {};
-  }
-
-  render() {
-    return (
-      <div>Hello</div>
-    )
-  }
+function boot() {
+  console.log("Boot")
+  let root = document.getElementById("content");
+  root.innerHTML = "Loaded"
 }
 
-render(
-  <Content />,
-  parentNode, replaceNode
-);
+(window as any).boot = boot; // Export

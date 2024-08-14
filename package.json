@@ -8,7 +8,6 @@
   "author": "mcc",
   "license": "CC0-1.0",
   "dependencies": {
-    "preact": "^10.23.2"
   },
   "devDependencies": {
     "webpack": "^5.93.0",
