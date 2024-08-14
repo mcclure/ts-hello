@@ -5,7 +5,8 @@ declare let require:any
 function boot() {
   console.log("Boot")
   let root = document.getElementById("content");
-  root.innerHTML = "Loaded"
+  let page = document.createTextNode("Loaded");
+  root.replaceChild(page, root.firstChild);
 }
 
 (window as any).boot = boot; // Export
