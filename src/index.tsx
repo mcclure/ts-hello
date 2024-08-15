@@ -17,7 +17,9 @@ function fixBoxSize() {
   console.log("Resize", width, height);
 
   const square = Math.min(width, height);
-  boxSide = Math.floor(square/(BOXES_ACROSS*3-1+5));
+  boxSide = Math.max(1,
+    Math.floor(square/(BOXES_ACROSS*3-1+5))
+  );
   baseX = Math.floor((width - square)/2);
   baseY = Math.floor((height - square)/2);
 
@@ -37,7 +39,7 @@ function fixBoxPos() {
     const x = idx % BOXES_ACROSS;
 
     const theta = y + x;
-    const off = Math.sin(frameTime/1000 + 4*theta / BOXES_ACROSS) * boxSide;
+    const off = Math.sin(frameTime/1000 + 4*theta/BOXES_ACROSS) * boxSide;
 
     box.style.left = (baseX + boxSide*3*(1+x) - off) + "px";
     box.style.top = (baseY + boxSide*3*(1+y) - off) + "px";
@@ -50,6 +52,11 @@ function step(_frameTime:number) {
   frameTime = _frameTime - firstTime;
 
   window.requestAnimationFrame(step);
+  fixBoxPos();
+}
+
+function resize() {
+  fixBoxSize();
   fixBoxPos();
 }
 
@@ -69,6 +76,8 @@ function boot() {
   fixBoxSize();
   fixBoxPos();
   root.replaceChild(page, root.firstChild);
+
+  (new ResizeObserver(resize)).observe(root); // Callback will occur when div (fullscreen) resizes
   window.requestAnimationFrame(step);
 }
 
