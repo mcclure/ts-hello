@@ -6,6 +6,7 @@ let root:HTMLElement = null;
 const BOXES_ACROSS = 11;
 const boxes:HTMLDivElement[] = [];
 let firstTime:number = null;
+let frameTime = 0;
 let boxSide:number = null;
 let baseX:number = null;
 let baseY:number = null;
@@ -35,15 +36,18 @@ function fixBoxPos() {
     const y = Math.floor(idx / BOXES_ACROSS);
     const x = idx % BOXES_ACROSS;
 
-    box.style.left = (baseX + boxSide*3*(1+x)) + "px";
-    box.style.top = (baseY + boxSide*3*(1+y)) + "px";
+    const theta = y + x;
+    const off = Math.sin(frameTime/1000 + 4*theta / BOXES_ACROSS) * boxSide;
+
+    box.style.left = (baseX + boxSide*3*(1+x) - off) + "px";
+    box.style.top = (baseY + boxSide*3*(1+y) - off) + "px";
   }
 }
 
 function step(_frameTime:number) {
   if (!firstTime)
     firstTime = _frameTime;
-  const frameTime = _frameTime - firstTime; 
+  frameTime = _frameTime - firstTime;
 
   window.requestAnimationFrame(step);
   fixBoxPos();
