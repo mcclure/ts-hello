@@ -1,0 +1,1 @@
+In disapproval of Microsoft's corporate policies on "generative AI", and out of concern that "Copilot" may be getting trained on my open source code in violation of various licenses I have used, this repository has been moved to [Codeberg](https://codeberg.org/mcc/ts-hello).
